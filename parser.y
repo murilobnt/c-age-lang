@@ -68,4 +68,8 @@ expression      :     NUMBER { printf("NUMBER"); }
 
 %%
 
+int main (void) {
+	return yyparse ( );
+}
+
 int yyerror (char *s) {fprintf (stderr, "%s\n", s);}
