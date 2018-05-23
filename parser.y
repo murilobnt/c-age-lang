@@ -38,11 +38,11 @@ blocks          :     func { printf("function\n"); }
 
 func            :     TYPE ID func_parameters block_body { printf("TYPE ID func_parameters block_body"); }
 
-func_parameters :     OPAREN CPAREN { printf("Open/Close parents"); }
+func_parameters :     OPAREN CPAREN { printf("()"); }
 
 block_body      :     OBRACE block_stmts CBRACE { printf("OBRACE block_stm CBRACE"); }
 
-block_stmts      :     block_stmt { printf("block_stmt"); }
+block_stmts     :     block_stmt { printf("block_stmt"); }
                 |     block_stmts SEMICOLON block_stmt { printf("block_stmts SEMICOLON block_stmt"); }
 
 block_stmt      :     init { printf("init"); }
