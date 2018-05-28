@@ -6,7 +6,7 @@
 
 [ \t\n]																 ;
 return                                 { return RETURN; }
-int|float|double|char|set|bool|void    { return TYPE; }
+"int"|"float"|"double"|"char"|"set"|"bool"|"void"    { return TYPE; }
 
 if									   { return IF; }
 while								   { return WHILE; }
@@ -25,10 +25,10 @@ while								   { return WHILE; }
 "true" | "false"					   { return BOOL_LIT; }
 \"(\\.|[^"\\])*\"					   { return STRING_LIT; }
 
-\(                                     { return OPAREN; }
-\)                                     { return CPAREN; }
-\{                                     { return OBRACE; }
-\}                                     { return CBRACE; }
+"("                                     { return OPAREN; }
+")"                                     { return CPAREN; }
+"{"                                     { return OBRACE; }
+"}"                                     { return CBRACE; }
 
 [0-9]+								   { yylval.iValue = atoi(yytext); return NUMBER; }
 [-]?[0-9]*\.?[0-9]+|true|false         { return NUMBER_LIT; }

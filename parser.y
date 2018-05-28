@@ -6,6 +6,8 @@ int yyerror(char *s);
 extern int yylineno;
 extern char * yytext;
 
+#define YYSTYPE char *
+
 %}
 
 %union{
@@ -24,6 +26,8 @@ extern char * yytext;
 %token SEMICOLON COMMA
 %token OPERATOR
 
+%type <sValue> blocks func block_stmts block_stmt init attr expression
+
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
 %left EQUAL DIFFERENT
@@ -31,40 +35,41 @@ extern char * yytext;
 %start start_stm
 
 %%
-start_stm       :     blocks { printf("blocks\n"); }
 
-blocks          :     func { printf("function\n"); }
+start_stm       :     blocks { printf("%s", $1); }
+
+blocks          :     func { $$ = $1; }
                 |     blocks func { printf("blocks func\n"); }
 
-func            :     TYPE ID func_parameters block_body { printf("TYPE ID func_parameters block_body"); }
+func            :     TYPE ID func_parameters block_body { $$ = $1; }
 
-func_parameters :     OPAREN CPAREN { printf("()"); }
+func_parameters :     OPAREN CPAREN { printf("()\n"); }
 
-block_body      :     OBRACE block_stmts CBRACE { printf("OBRACE block_stm CBRACE"); }
+block_body      :     OBRACE block_stmts CBRACE { printf("OBRACE block_stm CBRACE\n"); }
 
-block_stmts     :     block_stmt { printf("block_stmt"); }
-                |     block_stmts SEMICOLON block_stmt { printf("block_stmts SEMICOLON block_stmt"); }
+block_stmts     :     block_stmt SEMICOLON { printf("block_stmt SEMICOLON\n"); }
+                |     block_stmt SEMICOLON block_stmts { printf("block_stmt SEMICOLON block_stmts\n"); }
 
-block_stmt      :     init { printf("init"); }
-                |     attr { printf("attr"); }
-                |     call { printf("call"); }
-                |     if_stmt { printf("if"); }
-                |     while_stmt { printf("while"); }
+block_stmt      :     init { printf("init\n"); }
+                |     attr { printf("attr\n"); }
+                |     call { printf("call\n"); }
+                |     if_stmt { printf("if\n"); }
+                |     while_stmt { printf("while\n"); }
 
-if_stmt         :     IF cond_params block_body { printf("IF if_parameters block_body"); }
+if_stmt         :     IF cond_params block_body { printf("IF if_parameters block_body\n"); }
 
-while_stmt      :     WHILE cond_params block_body { printf("IF if_parameters block_body"); }
+while_stmt      :     WHILE cond_params block_body { printf("IF if_parameters block_body\n"); }
 
-cond_params     :     OPAREN CPAREN { printf("OPAREN CPAREN"); }
+cond_params     :     OPAREN CPAREN { printf("OPAREN CPAREN\n"); }
 
-init            :     TYPE ID { printf("TYPE ID"); }
-                |     TYPE attr { printf("TYPE attr"); }
+init            :     TYPE ID { printf("TYPE ID\n"); }
+                |     TYPE attr { printf("TYPE attr\n"); }
 
-attr            :     ID EQUAL expression { printf("ID EQUAL expression"); }
+attr            :     ID EQUAL expression { printf("ID EQUAL expression\n"); }
 
-call            :     ID OPAREN CPAREN { printf("ID OPAREN CPAREN"); }
+call            :     ID OPAREN CPAREN { printf("ID OPAREN CPAREN\n"); }
 
-expression      :     NUMBER { printf("NUMBER"); }
+expression      :     NUMBER { $$ = "todo"; }
 
 %%
 
