@@ -6,8 +6,6 @@ int yyerror(char *s);
 extern int yylineno;
 extern char * yytext;
 
-#define YYSTYPE char *
-
 %}
 
 %union{
@@ -26,7 +24,7 @@ extern char * yytext;
 %token SEMICOLON COMMA
 %token OPERATOR
 
-%type <sValue> blocks func block_stmts block_stmt init attr expression
+%type <sValue> blocks func func_parameters cond_params block_body block_stmts block_stmt init attr expression
 
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
@@ -36,21 +34,23 @@ extern char * yytext;
 
 %%
 
-start_stm       :     blocks { printf("%s", $1); }
+//start_stm       :     blocks { printf("%s", $1); }
+
+start_stm	:     expression { printf("%s", $1); }
 
 blocks          :     func { $$ = $1; }
                 |     blocks func { printf("blocks func\n"); }
 
-func            :     TYPE ID func_parameters block_body { $$ = $1; }
+func            :     TYPE ID func_parameters block_body { sprintf($$, "TYPE %s %s %s", $2, $3, $4); }
 
-func_parameters :     OPAREN CPAREN { printf("()\n"); }
+func_parameters :     OPAREN CPAREN { sprintf($$, "()"); }
 
-block_body      :     OBRACE block_stmts CBRACE { printf("OBRACE block_stm CBRACE\n"); }
+block_body      :     OBRACE block_stmts CBRACE { sprintf($$, "{ %s }", $2); }
 
-block_stmts     :     block_stmt SEMICOLON { printf("block_stmt SEMICOLON\n"); }
-                |     block_stmt SEMICOLON block_stmts { printf("block_stmt SEMICOLON block_stmts\n"); }
+block_stmts     :     block_stmt SEMICOLON { sprintf($$, "%s;", $1); }
+                |     block_stmt SEMICOLON block_stmts { sprintf($$, "%s ; %s", $1, $3); }
 
-block_stmt      :     init { printf("init\n"); }
+block_stmt      :     init { $$ = $1; }
                 |     attr { printf("attr\n"); }
                 |     call { printf("call\n"); }
                 |     if_stmt { printf("if\n"); }
@@ -60,16 +60,16 @@ if_stmt         :     IF cond_params block_body { printf("IF if_parameters block
 
 while_stmt      :     WHILE cond_params block_body { printf("IF if_parameters block_body\n"); }
 
-cond_params     :     OPAREN CPAREN { printf("OPAREN CPAREN\n"); }
+cond_params     :     OPAREN CPAREN { sprintf($$, "()"); }
 
 init            :     TYPE ID { printf("TYPE ID\n"); }
-                |     TYPE attr { printf("TYPE attr\n"); }
+                |     TYPE attr { sprintf($$, "TYPE %s", $2); }
 
-attr            :     ID EQUAL expression { printf("ID EQUAL expression\n"); }
+attr            :     ID EQUAL expression { sprintf($$, "%s = %s", $1, $3); }
 
 call            :     ID OPAREN CPAREN { printf("ID OPAREN CPAREN\n"); }
 
-expression      :     NUMBER { $$ = "todo"; }
+expression      :     NUMBER { sprintf($$, "%d", $1); }
 
 %%
 
