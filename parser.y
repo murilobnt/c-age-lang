@@ -24,7 +24,8 @@ extern char * yytext;
 %token SEMICOLON COMMA
 %token OPERATOR
 
-%type <sValue> blocks func func_parameters cond_params block_body block_stmts block_stmt init attr expression
+%type <sValue> blocks func func_parameters cond_params block_body block_stmts block_stmt init attr
+%type <iValue> expression
 
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
@@ -34,21 +35,19 @@ extern char * yytext;
 
 %%
 
-//start_stm       :     blocks { printf("%s", $1); }
-
-start_stm	:     expression { printf("%s", $1); }
+start_stm       :     blocks { printf("%s\n", $1); }
 
 blocks          :     func { $$ = $1; }
                 |     blocks func { printf("blocks func\n"); }
 
-func            :     TYPE ID func_parameters block_body { sprintf($$, "TYPE %s %s %s", $2, $3, $4); }
+func            :     TYPE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char)); sprintf($$, "TYPE %s %s %s", $2, $3, $4); }
 
-func_parameters :     OPAREN CPAREN { sprintf($$, "()"); }
+func_parameters :     OPAREN CPAREN { $$ = (char *)malloc(sizeof(char)); sprintf($$, "()"); }
 
-block_body      :     OBRACE block_stmts CBRACE { sprintf($$, "{ %s }", $2); }
+block_body      :     OBRACE block_stmts CBRACE { $$ = (char *)malloc(sizeof(char)); sprintf($$, "{ %s }", $2); }
 
-block_stmts     :     block_stmt SEMICOLON { sprintf($$, "%s;", $1); }
-                |     block_stmt SEMICOLON block_stmts { sprintf($$, "%s ; %s", $1, $3); }
+block_stmts     :     block_stmt SEMICOLON { $$ = (char *)malloc(sizeof(char)); sprintf($$, "%s;", $1); }
+                |     block_stmt SEMICOLON block_stmts { $$ = (char *)malloc(sizeof(char)); sprintf($$, "%s ; %s", $1, $3); }
 
 block_stmt      :     init { $$ = $1; }
                 |     attr { printf("attr\n"); }
@@ -60,16 +59,16 @@ if_stmt         :     IF cond_params block_body { printf("IF if_parameters block
 
 while_stmt      :     WHILE cond_params block_body { printf("IF if_parameters block_body\n"); }
 
-cond_params     :     OPAREN CPAREN { sprintf($$, "()"); }
+cond_params     :     OPAREN CPAREN { $$ = (char *)malloc(sizeof(char)); sprintf($$, "()"); }
 
 init            :     TYPE ID { printf("TYPE ID\n"); }
-                |     TYPE attr { sprintf($$, "TYPE %s", $2); }
+                |     TYPE attr { $$ = (char *)malloc(sizeof(char)); sprintf($$, "TYPE %s", $2); }
 
-attr            :     ID EQUAL expression { sprintf($$, "%s = %s", $1, $3); }
+attr            :     ID EQUAL expression {  $$ = (char *)malloc(sizeof(char)); sprintf( $$, "%s = %d", $1, $3); }
 
 call            :     ID OPAREN CPAREN { printf("ID OPAREN CPAREN\n"); }
 
-expression      :     NUMBER { sprintf($$, "%d", $1); }
+expression      :     NUMBER { $$ = $1; }
 
 %%
 
