@@ -1,20 +1,9 @@
-static int const x = 3;
-
-int a(){
-int y = 3;
-}
-
-int b(){
-int z = 3;
-}
-
-int y = 5;
-
-int c(){
-int foo = 7;
-}
-
 int main(){
+if(){
 int x = 3;
+}
+while(){
 int y = 5;
+}
+return 0;
 }

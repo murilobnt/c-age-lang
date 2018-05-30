@@ -1,7 +1,19 @@
-int teste = 7;
-static int const teste2 = 6;
+static int const x = 1;
 
-int main() {
+procedure a(){
 int x = 3;
-int y = 5;
+}
+
+int b(){
+return 5;
+}
+
+int y = 7;
+
+procedure c(){
+int z = 9;
+}
+
+int main(){
+return 0;
 }
