@@ -28,7 +28,7 @@ extern char * yytext;
 %token SEMICOLON COMMA
 %token OPERATOR
 
-%type <sValue> global_scope globals global global_var static_init func proc func_bloc_scope func_parameters block_body func_body return_stmt block_stmts block_stmt init attr
+%type <sValue> global_scope globals global global_var static_init func proc bloc_scope func_parameters block_body func_body return_stmt block_stmts block_dec cond_params block_stmt if_stmt while_stmt init attr call
 %type <iValue> expression
 
 %left PLUS MINUS
@@ -41,7 +41,7 @@ extern char * yytext;
 
 start_stm       :     global_scope { printf("%s\n", $1); }
 
-global_scope    :     {}
+global_scope    :     { $$ = ""; }
                 |     globals { $$ = $1; }
 
 globals         :     global { $$ = $1; }
@@ -63,28 +63,38 @@ proc            :     PROCEDURE ID func_parameters block_body { $$ = (char *)mal
 
 func_parameters :     OPAREN CPAREN { $$ = (char *)malloc(sizeof(char) * (3)); sprintf($$, "()"); }
 
-func_body       :     OBRACE func_bloc_scope return_stmt CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+6)); sprintf($$, "{ \n%s%s\n}", $2, $3); }
+func_body       :     OBRACE bloc_scope return_stmt CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+6)); sprintf($$, "{ \n%s%s\n}", $2, $3); }
 
-func_bloc_scope :     { $$ = ""; }
+bloc_scope      :     { $$ = ""; }
                 |     block_stmts { $$ = $1; }
 
 return_stmt     :     RETURN expression SEMICOLON { $$ = (char *)malloc(sizeof(char) * (intlen($2)+8)); sprintf($$, "return %d;", $2); }
 
-block_body      :     OBRACE block_stmts CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+5)); sprintf($$, "{ \n%s}", $2); }
+block_body      :     OBRACE bloc_scope CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+5)); sprintf($$, "{ \n%s}", $2); }
 
-block_stmts     :     block_stmt SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;\n", $1); }
-                |     block_stmt SEMICOLON block_stmts { $$ = (char *)malloc(sizeof(char) * (strlen($1)+5+strlen($3))); sprintf($$, "%s; \n%s", $1, $3); }
+block_stmts     :     block_stmt { $$ = $1; }
+                |     block_stmts block_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+5)); sprintf($$, "%s %s\n", $1, $2); }
 
-block_stmt      :     init { $$ = $1; }
-                |     attr { printf("attr\n"); }
-                |     call { printf("call\n"); }
+block_stmt      :     block_dec SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;\n", $1); }
+                |     if_stmt { $$ = $1; }
+                |     while_stmt { $$ = $1; }
+
+if_stmt         :     IF cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+2)); sprintf($$, "if %s %s", $2, $3); }
+
+while_stmt      :     WHILE cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+7)); sprintf($$, "while %s %s", $2, $3); }
+
+cond_params     :     OPAREN CPAREN { $$ = "()"; }
+
+block_dec       :     init { $$ = $1; }
+                |     attr { $$ = $1; }
+                |     call { $$ = $1; }
 
 init            :     TYPE ID { printf("TYPE ID\n"); }
                 |     TYPE attr { $$ = (char *)malloc(sizeof(char) * (strlen($2)+6)); sprintf($$, "TYPE %s", $2); }
 
 attr            :     ID EQUAL expression {  $$ = (char *)malloc(sizeof(char) * (strlen($1)+4+intlen($3)+1)); sprintf( $$, "%s = %d", $1, $3); }
 
-call            :     ID OPAREN CPAREN { printf("ID OPAREN CPAREN\n"); }
+call            :     ID OPAREN CPAREN { $$ = "ID ()"; }
 
 expression      :     NUMBER { $$ = $1; }
 
