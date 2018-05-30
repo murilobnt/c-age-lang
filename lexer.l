@@ -4,35 +4,35 @@
 
 %%
 
-[ \t\n]																 ;
-return                                 { return RETURN; }
+[ \t\n]                                              ;
+"return"                                             { return RETURN; }
 "int"|"float"|"double"|"char"|"set"|"bool"|"void"    { return TYPE; }
 
-if									   { return IF; }
-while								   { return WHILE; }
+"if"                                                 { return IF; }
+"while"                                              { return WHILE; }
 
-"+"									   { return PLUS; }
-"-"									   { return MINUS; }
-"*"									   { return TIMES; }
-"/"									   { return DIVIDE; }
+"+"                                                  { return PLUS; }
+"-"                                                  { return MINUS; }
+"*"                                                  { return TIMES; }
+"/"                                                  { return DIVIDE; }
 
-"%"									   { return MOD; }
-";"                                    { return SEMICOLON; }
-","									   { return COMMA; }
-"="                                    { return EQUAL; }
-"!="								   { return DIFFERENT; }
+"%"                                                  { return MOD; }
+";"                                                  { return SEMICOLON; }
+","                                                  { return COMMA; }
+"="                                                  { return EQUAL; }
+"!="                                                 { return DIFFERENT; }
 
-"true" | "false"					   { return BOOL_LIT; }
-\"(\\.|[^"\\])*\"					   { return STRING_LIT; }
+"true" | "false"                                     { return BOOL_LIT; }
+\"(\\.|[^"\\])*\"                                    { return STRING_LIT; }
 
-"("                                     { return OPAREN; }
-")"                                     { return CPAREN; }
-"{"                                     { return OBRACE; }
-"}"                                     { return CBRACE; }
+"("                                                  { return OPAREN; }
+")"                                                  { return CPAREN; }
+"{"                                                  { return OBRACE; }
+"}"                                                  { return CBRACE; }
 
-[0-9]+								   { yylval.iValue = atoi(yytext); return NUMBER; }
-[-]?[0-9]*\.?[0-9]+|true|false         { return NUMBER_LIT; }
-[_]*[a-z][a-zA-Z0-9_]*         	       { yylval.sValue = strdup(yytext); return ID; }
+[0-9]+                                               { yylval.iValue = atoi(yytext); return NUMBER; }
+[-]?[0-9]*\.?[0-9]+|true|false                       { return NUMBER_LIT; }
+[_]*[a-z][a-zA-Z0-9_]*                               { yylval.sValue = strdup(yytext); return ID; }
 
 %%
 
