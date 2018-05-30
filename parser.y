@@ -28,7 +28,7 @@ extern char * yytext;
 %token SEMICOLON COMMA
 %token OPERATOR
 
-%type <sValue> blocks globals global static_init func func_parameters block_body block_stmts block_stmt init attr
+%type <sValue> global_scope globals global global_var static_init func func_parameters block_body block_stmts block_stmt init attr
 %type <iValue> expression
 
 %left PLUS MINUS
@@ -39,20 +39,22 @@ extern char * yytext;
 
 %%
 
-start_stm       :     globals blocks { printf("%s\n%s\n", $1, $2); }
-                |     blocks { printf("%s\n", $1); }
+start_stm       :     global_scope { printf("%s\n", $1); }
 
-globals         :     global SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;", $1); }
-                |     globals global SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+5)); sprintf($$, "%s\n%s;", $1, $2); }
+global_scope    :     {}
+                |     globals { $$ = $1; }
 
-global          :     init { $$ = $1; }
+globals         :     global { $$ = $1; }
+                |     globals global { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf($$, "%s\n%s", $1, $2); }
+
+global          :     global_var SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;", $1); }
+                |     func { $$ = $1; }
+
+global_var      :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     static_init { $$ = $1; }
 
 static_init     :     STATIC TYPE CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC TYPE CONST %s", $4); }
-
-blocks          :     func { $$ = $1; }
-                |     blocks func { printf("blocks func\n"); }
 
 func            :     TYPE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+11)); sprintf($$, "TYPE %s %s %s", $2, $3, $4); }
 
