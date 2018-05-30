@@ -12,7 +12,7 @@ TABH = $(FLEXYACCDIR)/y.tab.h
 LEXFILE = lexer.l
 YACC = parser.y
 
-all : $(OUTPUT)
+all :       $(OUTPUT)
 
 $(LEX) :    $(LEXFILE)
 						flex -o $(LEX) $(LEXFILE)
