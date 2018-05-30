@@ -9,6 +9,7 @@
 "int"|"float"|"double"|"char"|"set"|"bool"|"void"    { return TYPE; }
 "static"                                             { return STATIC; }
 "const"                                              { return CONST; }
+"procedure"                                          { return PROCEDURE; }
 
 "if"                                                 { return IF; }
 "while"                                              { return WHILE; }

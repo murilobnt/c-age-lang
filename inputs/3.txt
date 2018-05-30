@@ -1,0 +1,19 @@
+static int const x = 1;
+
+procedure a(){
+int x = 3;
+}
+
+int b(){
+return 5;
+}
+
+int y = 7;
+
+procedure c(){
+int z = 9;
+}
+
+int main(){
+return 1;
+}

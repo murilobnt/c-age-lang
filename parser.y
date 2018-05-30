@@ -22,13 +22,13 @@ extern char * yytext;
 %token <sValue> STRING_LIT
 %token <iValue> NUMBER
 
-%token STATIC CONST TYPE RETURN BOOL_LIT
+%token STATIC CONST TYPE RETURN BOOL_LIT PROCEDURE
 %token IF WHILE
 %token OPAREN CPAREN OBRACE CBRACE
 %token SEMICOLON COMMA
 %token OPERATOR
 
-%type <sValue> global_scope globals global global_var static_init func func_parameters block_body block_stmts block_stmt init attr
+%type <sValue> global_scope globals global global_var static_init func proc func_bloc_scope func_parameters block_body func_body return_stmt block_stmts block_stmt init attr
 %type <iValue> expression
 
 %left PLUS MINUS
@@ -49,6 +49,7 @@ globals         :     global { $$ = $1; }
 
 global          :     global_var SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;", $1); }
                 |     func { $$ = $1; }
+                |     proc { $$ = $1; }
 
 global_var      :     init { $$ = $1; }
                 |     attr { $$ = $1; }
@@ -56,9 +57,18 @@ global_var      :     init { $$ = $1; }
 
 static_init     :     STATIC TYPE CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC TYPE CONST %s", $4); }
 
-func            :     TYPE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+11)); sprintf($$, "TYPE %s %s %s", $2, $3, $4); }
+func            :     TYPE ID func_parameters func_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+8)); sprintf($$, "TYPE %s %s %s", $2, $3, $4); }
+
+proc            :     PROCEDURE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+13)); sprintf($$, "procedure %s %s %s", $2, $3, $4); }
 
 func_parameters :     OPAREN CPAREN { $$ = (char *)malloc(sizeof(char) * (3)); sprintf($$, "()"); }
+
+func_body       :     OBRACE func_bloc_scope return_stmt CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+6)); sprintf($$, "{ \n%s%s\n}", $2, $3); }
+
+func_bloc_scope :     { $$ = ""; }
+                |     block_stmts { $$ = $1; }
+
+return_stmt     :     RETURN expression SEMICOLON { $$ = (char *)malloc(sizeof(char) * (intlen($2)+8)); sprintf($$, "return %d;", $2); }
 
 block_body      :     OBRACE block_stmts CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+5)); sprintf($$, "{ \n%s}", $2); }
 
