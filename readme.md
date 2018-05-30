@@ -8,8 +8,17 @@
 
 ## Compilação
 
+Explicação dos diretórios:
+* bin: Diretório do executável (Terá o nome cage).
+* generated: Diretório que conterá os arquivos gerados pelo flex e yacc.
+
 ```
-$ flex lexer.l
-$ yacc -d parser.y
-$ cc y.tab.c lex.yy.c -lm -o drive
+$ make
+```
+
+## Execução
+
+Para executar:
+```
+$ ./bin/cage < inputs/input.txt
 ```
