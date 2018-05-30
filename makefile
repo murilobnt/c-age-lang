@@ -14,6 +14,8 @@ YACC = parser.y
 
 all :       $(OUTPUT)
 
+new :       clean $(OUTPUT)
+
 $(LEX) :    $(LEXFILE)
 						flex -o $(LEX) $(LEXFILE)
 

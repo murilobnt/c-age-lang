@@ -7,6 +7,8 @@
 [ \t\n]                                              ;
 "return"                                             { return RETURN; }
 "int"|"float"|"double"|"char"|"set"|"bool"|"void"    { return TYPE; }
+"static"                                             { return STATIC; }
+"const"                                              { return CONST; }
 
 "if"                                                 { return IF; }
 "while"                                              { return WHILE; }

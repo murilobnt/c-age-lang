@@ -22,13 +22,13 @@ extern char * yytext;
 %token <sValue> STRING_LIT
 %token <iValue> NUMBER
 
-%token TYPE RETURN BOOL_LIT
+%token STATIC CONST TYPE RETURN BOOL_LIT
 %token IF WHILE
 %token OPAREN CPAREN OBRACE CBRACE
 %token SEMICOLON COMMA
 %token OPERATOR
 
-%type <sValue> blocks func func_parameters cond_params block_body block_stmts block_stmt init attr
+%type <sValue> blocks globals global static_init func func_parameters block_body block_stmts block_stmt init attr
 %type <iValue> expression
 
 %left PLUS MINUS
@@ -39,7 +39,17 @@ extern char * yytext;
 
 %%
 
-start_stm       :     blocks { printf("%s\n", $1); }
+start_stm       :     globals blocks { printf("%s\n%s\n", $1, $2); }
+                |     blocks { printf("%s\n", $1); }
+
+globals         :     global SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;", $1); }
+                |     globals global SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+5)); sprintf($$, "%s\n%s;", $1, $2); }
+
+global          :     init { $$ = $1; }
+                |     attr { $$ = $1; }
+                |     static_init { $$ = $1; }
+
+static_init     :     STATIC TYPE CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC TYPE CONST %s", $4); }
 
 blocks          :     func { $$ = $1; }
                 |     blocks func { printf("blocks func\n"); }
@@ -56,14 +66,6 @@ block_stmts     :     block_stmt SEMICOLON { $$ = (char *)malloc(sizeof(char) * 
 block_stmt      :     init { $$ = $1; }
                 |     attr { printf("attr\n"); }
                 |     call { printf("call\n"); }
-                |     if_stmt { printf("if\n"); }
-                |     while_stmt { printf("while\n"); }
-
-if_stmt         :     IF cond_params block_body { printf("IF if_parameters block_body\n"); }
-
-while_stmt      :     WHILE cond_params block_body { printf("IF if_parameters block_body\n"); }
-
-cond_params     :     OPAREN CPAREN { $$ = (char *)malloc(sizeof(char) * (3)); sprintf($$, "()"); }
 
 init            :     TYPE ID { printf("TYPE ID\n"); }
                 |     TYPE attr { $$ = (char *)malloc(sizeof(char) * (strlen($2)+6)); sprintf($$, "TYPE %s", $2); }
