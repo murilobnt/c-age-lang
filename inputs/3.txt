@@ -15,5 +15,5 @@ int z = 9;
 }
 
 int main(){
-return 1;
+return 0;
 }

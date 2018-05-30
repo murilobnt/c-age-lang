@@ -95,7 +95,10 @@ int main (void) {
 }
 
 int intlen(int i){
-  return floor(log10(abs(i))) + 1;
+  if(i == 0)
+    return 1;
+  else
+    return floor(log10(abs(i))) + 1;
 }
 
 int yyerror (char *s) {fprintf (stderr, "%s\n", s);}
