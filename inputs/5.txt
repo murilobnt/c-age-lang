@@ -1,0 +1,17 @@
+bool doMagicStuff(int x, int y){
+if (x == 3 or x == 5){
+return true;
+}
+if (y == 4){
+return true;
+}
+return false;
+}
+
+bool ifelse(int x){
+if (x == 1){
+return true;
+} else {
+return false;
+}
+}

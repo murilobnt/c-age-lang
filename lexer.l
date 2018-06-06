@@ -12,6 +12,7 @@
 "procedure"                                          { return PROCEDURE; }
 
 "if"                                                 { return IF; }
+"else"                                               { return ELSE; }
 "while"                                              { return WHILE; }
 
 "+"                                                  { return PLUS; }
@@ -22,6 +23,7 @@
 "or"                                                 { return OR; }
 "not"                                                { return UNOT; }
 "xor"                                                { return XOR; }
+"=="                                                 { return EQUALITY; }
 
 "%"                                                  { return MOD; }
 ";"                                                  { return SEMICOLON; }

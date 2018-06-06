@@ -27,16 +27,19 @@ extern char * yytext;
 %token <cValue> CHAR_LIT
 
 %token STATIC CONST RETURN PROCEDURE
-%token IF WHILE
+%token IF ELSE WHILE
 %token OPAREN CPAREN OBRACE CBRACE
 %token SEMICOLON COMMA
 %token OPERATOR
+%token EQUAL
 
-%type <sValue> global_scope globals global global_var static_init func proc bloc_scope func_parameters block_body func_body return_stmt block_stmts block_dec cond_params block_stmt if_stmt while_stmt init attr call expr operator operand
+%type <sValue> global_scope globals global global_var static_init func proc bloc_scope func_parameters block_body return_stmt block_stmts block_dec cond_params
+%type <sValue> block_stmt if_stmt while_stmt init attr call expr operator operand declaration decl_scope decl_list
+%type <sValue> if_else_stmt else_stmt
 
 %left PLUS MINUS OR UNOT
 %left TIMES DIVIDE MOD AND XOR
-%left EQUAL DIFFERENT
+%left EQUALITY DIFFERENT
 
 %start start_stm
 
@@ -60,39 +63,52 @@ global_var      :     init { $$ = $1; }
 
 static_init     :     STATIC TYPE CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC %s CONST %s", $2, $4); }
 
-func            :     TYPE ID func_parameters func_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+8)); sprintf($$, "%s %s %s %s", $1, $2, $3, $4); }
+func            :     TYPE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+8)); sprintf($$, "%s %s %s %s", $1, $2, $3, $4); }
 
 proc            :     PROCEDURE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+13)); sprintf($$, "procedure %s %s %s", $2, $3, $4); }
 
-func_parameters :     OPAREN CPAREN { $$ = "()"; }
+func_parameters :     OPAREN decl_scope CPAREN { $$ = (char *)malloc(sizeof(char) * (strlen($2)+3)); sprintf($$, "(%s)", $2); }
 
-func_body       :     OBRACE bloc_scope return_stmt CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+6)); sprintf($$, "{ \n%s%s\n}", $2, $3); }
+decl_scope      :     { $$ = ""; }
+                |     decl_list { $$ = $1; }
+
+decl_list       :     declaration { $$ = $1; }
+                |     declaration COMMA decl_list { $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($3) + 4)); sprintf($$, "%s, %s", $1, $3); }
 
 bloc_scope      :     { $$ = ""; }
                 |     block_stmts { $$ = $1; }
 
-return_stmt     :     RETURN expr SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($2)+8)); sprintf($$, "return %s;", $2); }
+return_stmt     :     RETURN expr SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($2)+8)); sprintf($$, "return %s;\n", $2); }
+                |     RETURN SEMICOLON { $$ = "return;\n"; }
 
-block_body      :     OBRACE bloc_scope CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+5)); sprintf($$, "{ \n%s}", $2); }
+block_body      :     OBRACE bloc_scope CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+5)); sprintf($$, "{\n%s}", $2); }
 
 block_stmts     :     block_stmt { $$ = $1; }
-                |     block_stmts block_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+5)); sprintf($$, "%s %s\n", $1, $2); }
+                |     block_stmts block_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+5)); sprintf($$, "%s%s", $1, $2); }
 
 block_stmt      :     block_dec SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+2)); sprintf($$, "%s;\n", $1); }
                 |     if_stmt { $$ = $1; }
+                |     if_else_stmt { $$ = $1; }
                 |     while_stmt { $$ = $1; }
+                |     return_stmt { $$ = $1; }
 
-if_stmt         :     IF cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+2)); sprintf($$, "if %s %s", $2, $3); }
+if_stmt         :     IF cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+2)); sprintf($$, "if %s %s\n", $2, $3); }
 
-while_stmt      :     WHILE cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+9)); sprintf($$, "while %s %s", $2, $3); }
+if_else_stmt    :     if_stmt else_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf($$, "%s%s", $1, $2); }
 
-cond_params     :     OPAREN CPAREN { $$ = "()"; }
+else_stmt       :     ELSE block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+1)); sprintf($$, "else %s\n", $2); }
+
+while_stmt      :     WHILE cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+9)); sprintf($$, "while %s %s\n", $2, $3); }
+
+cond_params     :     OPAREN expr CPAREN { $$ = (char *)malloc(sizeof(char) * (strlen($2) + 3)); sprintf($$, "(%s)", $2); }
 
 block_dec       :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     call { $$ = $1; }
 
-init            :     TYPE ID { printf("%s %s\n", $1, $2); }
+declaration     :     TYPE ID { $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($2) + 3)); sprintf($$, "%s %s", $1, $2); }
+
+init            :     declaration { $$ = $1; }
                 |     TYPE attr { $$ = (char *)malloc(sizeof(char) * (strlen($2)+6)); sprintf($$, "%s %s", $1, $2); }
 
 attr            :     ID EQUAL expr {  $$ = (char *)malloc(sizeof(char) * (strlen($1)+4+strlen($3)+1)); sprintf( $$, "%s = %s", $1, $3); }
@@ -118,6 +134,8 @@ operator        :     PLUS { $$ = "+"; }
                 |     OR { $$ = "||"; }
                 |     XOR { $$ = "!x && !y"; }
                 |     UNOT { $$ = "!"; }
+                |     EQUALITY { $$ = "=="; }
+                |     DIFFERENT { $$ = "!="; }
 
 %%
 
