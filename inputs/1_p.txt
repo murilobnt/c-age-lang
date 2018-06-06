@@ -1,0 +1,13 @@
+double avalia_expr(double x, double y, int c){
+	double xx = x * x;
+	return xx - y + c;
+}
+
+int main(){
+	double x = 5;
+	double y = 3;
+	int c = 10;
+
+	double result = avalia_expr(x, y, c);
+	return 0;
+}

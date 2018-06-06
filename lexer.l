@@ -6,6 +6,7 @@
 
 [ \t\n]                                              ;
 "return"                                             { return RETURN; }
+"break"                                              { return BREAK; }
 "int"|"float"|"double"|"char"|"set"|"bool"|"void"    { yylval.sValue = strdup(yytext); return TYPE; }
 "static"                                             { return STATIC; }
 "const"                                              { return CONST; }

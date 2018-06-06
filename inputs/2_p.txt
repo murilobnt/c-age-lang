@@ -1,0 +1,37 @@
+int main(){
+	while(true){
+		int x;
+
+		int intervalo1 = 0;
+		int intervalo2 = 0;
+		int intervalo3 = 0;
+		int intervalo4 = 0;
+
+		printf("Digite o valor de um número (negativo para finalizar): ");
+		scanf("%d", x);
+		printf("\n");
+
+		if(x < 0){
+			break;
+		}
+
+		if(x >= 0 and x <= 25){
+			intervalo1 = intervalo1 + 1;
+		}
+
+		if(x >= 26 and x <= 50){
+			intervalo2 = intervalo2 + 1;
+		}
+
+		if(x >= 51 and x <= 75){
+			intervalo3 = intervalo3 + 1;
+		}
+
+		if(x >= 76 and x <= 100){
+			intervalo4 = intervalo4 + 1;
+		}
+	}
+
+	printf("Resultado:\n[0-25]:%d\n[26-50]:%d\n[51-75]:%d\n[76-100]:%d\n", intervalo1, intervalo2, intervalo3, intervalo4);
+	return 0;
+}
