@@ -6,7 +6,7 @@
 
 [ \t\n]                                              ;
 "return"                                             { return RETURN; }
-"int"|"float"|"double"|"char"|"set"|"bool"|"void"    { return TYPE; }
+"int"|"float"|"double"|"char"|"set"|"bool"|"void"    { yylval.sValue = strdup(yytext); return TYPE; }
 "static"                                             { return STATIC; }
 "const"                                              { return CONST; }
 "procedure"                                          { return PROCEDURE; }
@@ -18,6 +18,10 @@
 "-"                                                  { return MINUS; }
 "*"                                                  { return TIMES; }
 "/"                                                  { return DIVIDE; }
+"and"                                                { return AND; }
+"or"                                                 { return OR; }
+"not"                                                { return UNOT; }
+"xor"                                                { return XOR; }
 
 "%"                                                  { return MOD; }
 ";"                                                  { return SEMICOLON; }
@@ -25,17 +29,19 @@
 "="                                                  { return EQUAL; }
 "!="                                                 { return DIFFERENT; }
 
-"true" | "false"                                     { return BOOL_LIT; }
-\"(\\.|[^"\\])*\"                                    { return STRING_LIT; }
+"true" | "false"                                     { yylval.sValue = strdup(yytext); return BOOL_LIT; }
+\"(\\.|[^"\\])*\"                                    { yylval.sValue = strdup(yytext); return STRING_LIT; }
+\'.?\'                                               { yylval.cValue = yytext[1]; return CHAR_LIT; }
 
 "("                                                  { return OPAREN; }
 ")"                                                  { return CPAREN; }
 "{"                                                  { return OBRACE; }
 "}"                                                  { return CBRACE; }
 
-[0-9]+                                               { yylval.iValue = atoi(yytext); return NUMBER; }
-[-]?[0-9]*\.?[0-9]+|true|false                       { return NUMBER_LIT; }
+[0-9]+                                               { yylval.sValue = strdup(yytext); return NUMBER; }
+[-]?[0-9]*\.?[0-9]+                                  { yylval.sValue = strdup(yytext); return NUMBER_LIT; }
 [_]*[a-z][a-zA-Z0-9_]*                               { yylval.sValue = strdup(yytext); return ID; }
+\/\*
 
 %%
 
