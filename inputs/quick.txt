@@ -1,0 +1,32 @@
+procedure quick_sort(int * arr, int begin, int end){
+  int pivot;
+  int left;
+  int right;
+  int swapper;
+
+  left = begin;
+  right = end;
+  pivot = arr[left + right/2];
+
+  while (left <= right){
+    while (arr[left] < pivot and left < end){
+      left = left + 1;
+    }
+    while (arr[right] > pivot and right > begin){
+      right = right - 1;
+    }
+    if(left <= right){
+      swapper = arr[left];
+      arr[left] = arr[right];
+      arr[right] = swapper;
+      left = left + 1;
+      right = right - 1;
+    }
+  }
+  if (right > begin){
+    quick_sort(arr, begin, right);
+  }
+  if (left < end){
+    quick_sort(arr, left, end);
+  }
+}

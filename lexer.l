@@ -17,8 +17,12 @@
 
 "+"                                                  { return PLUS; }
 "-"                                                  { return MINUS; }
-"*"                                                  { return TIMES; }
+"*"                                                  { return ASTERISK; }
 "/"                                                  { return DIVIDE; }
+">"                                                  { return HIGHER; }
+">="                                                 { return HIGHERE; }
+"<"                                                  { return MINOR; }
+"<="                                                 { return MINORE; }
 "and"                                                { return AND; }
 "or"                                                 { return OR; }
 "not"                                                { return UNOT; }
@@ -39,6 +43,8 @@
 ")"                                                  { return CPAREN; }
 "{"                                                  { return OBRACE; }
 "}"                                                  { return CBRACE; }
+"["                                                  { return OBRACKET; }
+"]"                                                  { return CBRACKET; }
 
 [0-9]+                                               { yylval.sValue = strdup(yytext); return NUMBER; }
 [-]?[0-9]*\.?[0-9]+                                  { yylval.sValue = strdup(yytext); return NUMBER_LIT; }

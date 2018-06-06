@@ -1,9 +1,0 @@
-int main(){
-if(){
-int x = 3;
-}
-while(){
-int y = 5;
-}
-return 0;
-}
