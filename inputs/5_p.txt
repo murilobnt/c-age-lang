@@ -1,0 +1,15 @@
+procedure mdc(int n, int m, int & z){
+  if(n % m == 0){
+    z = n;
+    return;
+  }
+
+  if(m % n == 0){
+    z = m;
+    return;
+  }
+
+  if(m > n){
+    mdc(n, m % n, z);
+  }
+}

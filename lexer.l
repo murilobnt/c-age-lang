@@ -11,10 +11,13 @@
 "static"                                             { return STATIC; }
 "const"                                              { return CONST; }
 "procedure"                                          { return PROCEDURE; }
+"container"                                          { return CONTAINER; }
 
 "if"                                                 { return IF; }
 "else"                                               { return ELSE; }
 "while"                                              { return WHILE; }
+
+"&"                                                  { return REF; }
 
 "+"                                                  { return PLUS; }
 "-"                                                  { return MINUS; }

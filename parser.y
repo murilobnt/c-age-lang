@@ -26,7 +26,7 @@ extern char * yytext;
 %token <sValue> TYPE
 %token <cValue> CHAR_LIT
 
-%token STATIC CONST RETURN BREAK PROCEDURE
+%token STATIC CONST RETURN BREAK PROCEDURE CONTAINER
 %token IF ELSE WHILE
 %token OPAREN CPAREN OBRACE CBRACE OBRACKET CBRACKET
 %token SEMICOLON COMMA
@@ -34,11 +34,11 @@ extern char * yytext;
 %token EQUAL
 
 %type <sValue> global_scope globals global global_var static_init func proc bloc_scope func_parameters block_body return_stmt block_stmts block_dec cond_params
-%type <sValue> block_stmt if_stmt while_stmt init attr call expr operator operand declaration decl_scope decl_list
+%type <sValue> block_stmt if_stmt while_stmt init attr call expr operator operand declaration decl_scope decl_list p_type
 %type <sValue> if_else_stmt else_stmt array_access type_val pointer_scope pointers expr_scope expr_list break_stmt accesses
 
 %left PLUS MINUS OR UNOT
-%left ASTERISK DIVIDE MOD AND XOR
+%left ASTERISK REF DIVIDE MOD AND XOR
 %left HIGHER HIGHERE MINOR MINORE EQUALITY DIFFERENT
 
 %start start_stm
@@ -148,8 +148,11 @@ type_val        :     TYPE pointer_scope { $$ = (char *)malloc(sizeof(char) * (s
 pointer_scope   :     { $$ = ""; }
                 |     pointers { $$ = $1; }
 
-pointers        :     ASTERISK { $$ = "*"; }
-                |     pointers ASTERISK { $$ = (char *)malloc(sizeof(char) * (strlen($1)+15)); sprintf($$, "%s*", $1); }
+pointers        :     p_type { $$ = $1; }
+                |     pointers p_type { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s%s", $1, $2); }
+
+p_type          :     ASTERISK { $$ = "*"; }
+                |     REF { $$ = "&"; }
 
 operator        :     PLUS { $$ = "+"; }
                 |     MINUS { $$ = "-"; }
