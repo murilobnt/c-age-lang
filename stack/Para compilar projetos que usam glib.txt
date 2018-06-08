@@ -1,0 +1,17 @@
+
+
+## Para compilar o teste:
+
+``gcc main.c Stack.c `pkg-config --cflags --libs glib-2.0` -o test``
+
+
+Note que a flag `pkg-config --cflags --libs glib-2.0` deve estar presente para que a glib seja reconhecida pelo compilador.
+
+
+Links úteis:
+
+- https://stackoverflow.com/questions/48427660/how-do-you-print-the-contents-of-a-glib-gstring-to-stdout
+- https://prognotes.net/2016/10/compiling-glib-c-programs/
+- https://developer.gnome.org/glib/2.56/glib-Strings.html
+- https://developer.gnome.org/glib/2.56/
+- https://developer.gnome.org/glib
