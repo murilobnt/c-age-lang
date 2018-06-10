@@ -16,7 +16,7 @@ Stack * push(Stack * head, GString * data) {
     aux->data = data;
     aux->next = head;
     head = aux;
-    
+
     return head;
 }
 
@@ -28,7 +28,7 @@ Stack * pop(Stack * head, GString * element){
     Stack * aux = head;
     element = head->data;
     head = head->next;
-    
+
     free(aux);
     return head;
 }
@@ -41,7 +41,7 @@ GString * top(Stack * head, unsigned int jump){
 	if(jump == 0){
 		return head->data;
 	}
-	
+
 	return top(head->next,jump-1);
 }
 
