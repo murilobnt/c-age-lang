@@ -3,12 +3,20 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <gmodule.h>
+
+#include "hash_table.h"
+#include "value_un.h"
+#include "Stack.h"
 
 int yylex(void);
 int yyerror(char *s);
 int intlen(int i);
 extern int yylineno;
 extern char * yytext;
+
+hash_table* my_table;
+Stack * scope_stack;
 
 %}
 
@@ -172,7 +180,9 @@ operator        :     PLUS { $$ = "+"; }
 %%
 
 int main (void) {
+  my_table = hash_table_new();
 	return yyparse ( );
+  delete_table(my_table);
 }
 
 int intlen(int i){
