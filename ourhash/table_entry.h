@@ -7,14 +7,12 @@
 #include "value_un.h"
 
 typedef struct {
-  char* id;
-  type_en type;
-  value_un value;
-  int scope;
+  char* id;  
+  char* type;
 
 } table_entry;
 
-table_entry* new_table_entry(const char * id, const type_en type, const value_un value, const int scope);
+table_entry* new_table_entry(const char * id, const char* type);
 void delete_entry(table_entry* entry);
 
 #endif

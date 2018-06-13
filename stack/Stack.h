@@ -1,16 +1,18 @@
 #ifndef STACK
 #define STACK
 
+#include <stdio.h>
+#include "subinfo.h"
+
 typedef struct node {
-    GString * data;
+    subinfo data;
     struct node * next;
 } Stack;
 
 void init(Stack * head);
-Stack * push(Stack * head, GString * data);
-Stack * pop(Stack * head, GString * element);
-GString * top(Stack * head, unsigned int jump);
+Stack * push(Stack * head, subinfo data);
+Stack * pop(Stack * head);
+subinfo top(Stack * head, unsigned int jump);
 int isEmpty(Stack * head);
-void erase(Stack * head);
 
 #endif

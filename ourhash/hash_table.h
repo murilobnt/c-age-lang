@@ -18,7 +18,7 @@ int ht_get_hash(const char* s, const int num_buckets, const int attempt);
 hash_table* hash_table_new();
 void delete_table(hash_table* ht);
 
-void ht_insert(hash_table* ht, const char * id, const type_en type, const value_un value, const int scope);
+void ht_insert(hash_table* ht, const char * id, const char * type);
 table_entry* ht_search(hash_table* ht, const char* id);
 
 #endif

@@ -2,8 +2,9 @@
 
 int ht_hash(const char* s, const int a, const int m){
   long hash = 0;
+  int i;
     const int len_s = strlen(s);
-    for (int i = 0; i < len_s; i++) {
+    for (i = 0; i < len_s; i++) {
         hash += (long)pow(a, len_s - (i+1)) * s[i];
         hash = hash % m;
     }
@@ -29,7 +30,8 @@ hash_table* hash_table_new(){
 }
 
 void delete_table(hash_table* ht){
-  for (int i = 0; i < ht->size; i++) {
+  int i;
+  for (i = 0; i < ht->size; i++) {
        table_entry* entry = ht->entries[i];
        if (entry != NULL) {
            delete_entry(entry);
@@ -40,8 +42,8 @@ void delete_table(hash_table* ht){
    free(ht);
 }
 
-void ht_insert(hash_table* ht, const char * id, const type_en type, const value_un value, const int scope){
-  table_entry* entry = new_table_entry(id, type, value, scope);
+void ht_insert(hash_table* ht, const char * id, const char * type){
+  table_entry* entry = new_table_entry(id, type);
   int index = ht_get_hash(entry->id, ht->size, 0);
   table_entry* cur_entry = ht->entries[index];
   int i = 1;

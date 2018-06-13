@@ -9,13 +9,14 @@
 #include "value_un.h"
 #include "Stack.h"
 
+#define GLOBAL "global"
+
 int yylex(void);
 int yyerror(char *s);
 int intlen(int i);
 extern int yylineno;
 extern char * yytext;
 
-hash_table* my_table;
 Stack * scope_stack;
 
 %}
@@ -53,7 +54,12 @@ Stack * scope_stack;
 
 %%
 
-start_stm       :     global_scope { printf("%s\n", $1); }
+start_stm       :     { subinfo glob;
+                        glob.subp = GLOBAL;
+                        glob.type = "void";
+                        scope_stack = push(scope_stack, glob);
+                      }
+                        global_scope { printf("%s\n", $2); }
 
 global_scope    :     { $$ = ""; }
                 |     globals { $$ = $1; }
@@ -71,7 +77,11 @@ global_var      :     init { $$ = $1; }
 
 static_init     :     STATIC type_val CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC %s CONST %s", $2, $4); }
 
-func            :     type_val ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+15)); sprintf($$, "%s %s %s %s", $1, $2, $3, $4); }
+func            :     type_val ID func_parameters { subinfo subf;
+                        subf.subp = $2;
+                        subf.type = $1;
+                        scope_stack = push(scope_stack, subf); }
+                        block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($5)+15)); sprintf($$, "%s %s %s %s", $1, $2, $3, $5); }
 
 proc            :     PROCEDURE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+13)); sprintf($$, "procedure %s %s %s", $2, $3, $4); }
 
@@ -121,7 +131,7 @@ declaration     :     type_val ID { $$ = (char *)malloc(sizeof(char) * (strlen($
                 |     type_val ID accesses { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($3)+15)); sprintf($$, "%s %s%s", $1, $2, $3); }
 
 init            :     declaration { $$ = $1; }
-                |     type_val attr { $$ = (char *)malloc(sizeof(char) * (strlen($2)+6)); sprintf($$, "%s %s", $1, $2); }
+                |     type_val attr { printf("This is top: %s\n", top(scope_stack, 0).subp); $$ = (char *)malloc(sizeof(char) * (strlen($2)+6)); sprintf($$, "%s %s", $1, $2); }
 
 attr            :     ID EQUAL expr { $$ = (char *)malloc(sizeof(char) * (strlen($1)+4+strlen($3)+15)); sprintf( $$, "%s = %s", $1, $3); }
                 |     array_access EQUAL expr { $$ = (char *)malloc(sizeof(char) * (strlen($1)+10+strlen($3)+15)); sprintf( $$, "%s = %s", $1, $3); }
@@ -180,9 +190,8 @@ operator        :     PLUS { $$ = "+"; }
 %%
 
 int main (void) {
-  my_table = hash_table_new();
-	return yyparse ( );
-  delete_table(my_table);
+  init(scope_stack);
+  return yyparse ( );
 }
 
 int intlen(int i){

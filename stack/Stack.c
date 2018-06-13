@@ -7,7 +7,7 @@ void init(Stack * head) {
     head = NULL;
 }
 
-Stack * push(Stack * head, GString * data) {
+Stack * push(Stack * head, subinfo data) {
     Stack * aux = (Stack*)malloc(sizeof(Stack));
     if(aux == NULL){
         exit(0);
@@ -20,20 +20,21 @@ Stack * push(Stack * head, GString * data) {
     return head;
 }
 
-Stack * pop(Stack * head, GString * element){
+Stack * pop(Stack * head){
 	if(isEmpty(head)){
+		printf("POP en pilla vazia.\n");
 		exit(0);
 	}
 
     Stack * aux = head;
-    element = head->data;
     head = head->next;
 
     free(aux);
+
     return head;
 }
 
-GString * top(Stack * head, unsigned int jump){
+subinfo top(Stack * head, unsigned int jump){
 	if(isEmpty(head)){
 		exit(0);
 	}
@@ -47,12 +48,4 @@ GString * top(Stack * head, unsigned int jump){
 
 int isEmpty(Stack * head){
     return head == NULL ? 1 : 0;
-}
-
-void erase(Stack * head){
-	GString * cleaner = NULL;
-	while(!isEmpty(head)){
-		pop(head, cleaner);
-		free(cleaner);
-	}
 }
