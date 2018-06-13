@@ -6,7 +6,6 @@
 #include <gmodule.h>
 
 #include "hash_table.h"
-#include "value_un.h"
 #include "Stack.h"
 
 #define GLOBAL "global"
@@ -18,6 +17,7 @@ extern int yylineno;
 extern char * yytext;
 
 Stack * scope_stack;
+hash_table * ht;
 
 %}
 
@@ -77,11 +77,12 @@ global_var      :     init { $$ = $1; }
 
 static_init     :     STATIC type_val CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC %s CONST %s", $2, $4); }
 
-func            :     type_val ID func_parameters { subinfo subf;
+func            :     type_val ID { subinfo subf;
                         subf.subp = $2;
                         subf.type = $1;
                         scope_stack = push(scope_stack, subf); }
-                        block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($5)+15)); sprintf($$, "%s %s %s %s", $1, $2, $3, $5); }
+                        func_parameters
+                        block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($4)+strlen($5)+15)); sprintf($$, "%s %s %s %s", $1, $2, $4, $5); }
 
 proc            :     PROCEDURE ID func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+strlen($4)+13)); sprintf($$, "procedure %s %s %s", $2, $3, $4); }
 
@@ -127,7 +128,11 @@ block_dec       :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     call { $$ = $1; }
 
-declaration     :     type_val ID { $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($2) + 15)); sprintf($$, "%s %s", $1, $2); }
+declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
+                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen($1)+strlen($2)+3)); 
+                                    sprintf(hash_id, "%s.%s", scope.subp, $2);
+                                    ht_insert(ht, hash_id, $1);
+                                    }
                 |     type_val ID accesses { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($3)+15)); sprintf($$, "%s %s%s", $1, $2, $3); }
 
 init            :     declaration { $$ = $1; }
@@ -191,7 +196,9 @@ operator        :     PLUS { $$ = "+"; }
 
 int main (void) {
   init(scope_stack);
+  ht = hash_table_new();
   return yyparse ( );
+  delete_table(ht);
 }
 
 int intlen(int i){

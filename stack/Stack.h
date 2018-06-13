@@ -14,5 +14,6 @@ Stack * push(Stack * head, subinfo data);
 Stack * pop(Stack * head);
 subinfo top(Stack * head, unsigned int jump);
 int isEmpty(Stack * head);
+unsigned int getSize();
 
 #endif
