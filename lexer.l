@@ -1,4 +1,5 @@
 %{
+  #include "operandinfo.h"
 	#include "y.tab.h"
 %}
 
@@ -41,7 +42,7 @@
 
 "true" | "false"                                     { yylval.sValue = strdup(yytext); return BOOL_LIT; }
 \"(\\.|[^"\\])*\"                                    { yylval.sValue = strdup(yytext); return STRING_LIT; }
-\'.?\'                                               { yylval.cValue = yytext[1]; return CHAR_LIT; }
+\'.?\'                                               { yylval.sValue = strdup(yytext); return CHAR_LIT; }
 
 "("                                                  { return OPAREN; }
 ")"                                                  { return CPAREN; }

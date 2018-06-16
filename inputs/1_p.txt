@@ -1,5 +1,3 @@
-int y;
-
 double avalia_expr(double x, double y, int c){
 	double xx = x * x;
 	return xx - y + c;

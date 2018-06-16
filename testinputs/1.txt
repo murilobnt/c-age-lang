@@ -1,0 +1,9 @@
+char* test = "foo";
+int x = test;
+
+int test(){
+   int x = 5;
+   return 3;
+}
+
+int y = x;
