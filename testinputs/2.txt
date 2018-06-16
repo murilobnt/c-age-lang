@@ -1,1 +1,13 @@
+int main(){
+  int x = 3;
 
+  if(x == 3){
+    int x = 6;
+    int y = 5;
+  } else {
+    int x = top;
+  }
+
+  x = y;
+  return 0;
+}

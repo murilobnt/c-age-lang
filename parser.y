@@ -25,6 +25,8 @@ extern char * yytext;
 Stack * scope_stack;
 hash_table * ht;
 
+int nested_level;
+
 %}
 
 %union{
@@ -110,7 +112,7 @@ proc            :     PROCEDURE ID {
                                       newsubf.type = "proc";
                                       scope_stack = push(scope_stack, newsubf);
                                    }
-                      func_parameters block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($4)+strlen($5)+13)); sprintf($$, "procedure %s %s %s", $2, $4, $5); }
+                      func_parameters block_body { scope_stack = pop(scope_stack); $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($4)+strlen($5)+13)); sprintf($$, "procedure %s %s %s", $2, $4, $5); }
 
 func_parameters :     OPAREN decl_scope CPAREN { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "(%s)", $2); }
 
@@ -140,13 +142,28 @@ block_stmt      :     block_dec SEMICOLON { $$ = (char *)malloc(sizeof(char) * (
 
 break_stmt      :     BREAK SEMICOLON { $$ = "break;\n"; }
 
-if_stmt         :     IF cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+15)); sprintf($$, "if %s %s\n", $2, $3); }
+if_stmt         :     IF {  subinfo newsubf;
+                            newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 4));
+                            sprintf(newsubf.subp, "if.%d", nested_level++);
+                            newsubf.type = "if";
+                            scope_stack = push(scope_stack, newsubf);
+                            }
+                            cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+15)); sprintf($$, "if %s %s\n", $3, $4); }
 
-if_else_stmt    :     if_stmt else_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s%s", $1, $2); }
+if_else_stmt    :     if_stmt { subinfo newsubf;
+                                newsubf.subp = "else";
+                                newsubf.type = "else";
+                                scope_stack = push(scope_stack, newsubf);
+                              } else_stmt { scope_stack = pop(scope_stack); $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+15)); sprintf($$, "%s%s", $1, $3); }
 
 else_stmt       :     ELSE block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "else %s\n", $2); }
 
-while_stmt      :     WHILE cond_params block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($3)+15)); sprintf($$, "while %s %s\n", $2, $3); }
+while_stmt      :     WHILE { subinfo newsubf;
+                            newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 7));
+                            sprintf(newsubf.subp, "while.%d", nested_level++);
+                            newsubf.type = "while";
+                            scope_stack = push(scope_stack, newsubf);
+                            } cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+15)); sprintf($$, "while %s %s\n", $3, $4); }
 
 cond_params     :     OPAREN expr CPAREN { $$ = ""; }
 
@@ -301,6 +318,7 @@ operator        :     PLUS { $$ = "+"; }
 %%
 
 int main (void) {
+  nested_level = 1;
   init(scope_stack);
   ht = hash_table_new();
   return yyparse ( );
