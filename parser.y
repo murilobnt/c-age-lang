@@ -174,6 +174,7 @@ init            :     declaration { $$ = $1; }
                                                   ht_insert(ht, hash_id, $1);
                                                 } else {
                                                   printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                                  $$ = "";
                                                 }
                                              }
                 |     type_val ID accesses EQUAL expr { compatibility comp = type_compatible($1, $5.type);
@@ -184,24 +185,28 @@ init            :     declaration { $$ = $1; }
                                                           ht_insert(ht, hash_id, $1);
                                                         } else {
                                                           printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                                          $$ = "";
                                                         }
                                                      }
 
 attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                       if(looking_for == NULL){
                                          printf("ERROR: VARIABLE %s NOT FOUND!!!\n", $1);
+                                         $$ = "";
                                       } else {
                                          compatibility comp = type_compatible(looking_for->type, $3.type);
                                          if(comp.isCompatible){
                                             $$ = $1;
                                          } else {
                                             printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                            $$ = "";
                                          }
                                       }
                                       }
                 |     ID accesses EQUAL expr {  table_entry* looking_for = look_for($1);
                                                 if(looking_for == NULL){
                                                    printf("ERROR: VARIABLE %s NOT FOUND!!!\n", $1);
+                                                   $$ = "";
                                                 } else {
                                                    char * var_name = (char*)malloc(sizeof(char)*(strlen($1)+strlen($2)+2)); sprintf(var_name, "%s%s", $1, $2);
                                                    $$ = var_name;
@@ -211,6 +216,7 @@ attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
 call            :     ID OPAREN expr_scope CPAREN { table_entry* looking_for = look_for($1);
                                                     if(looking_for == NULL){
                                                        printf("ERROR: FUNCTION/PROCEDURE %s NOT FOUND!!!\n", $1);
+                                                       $$ = (operandinfo){"foo", "error"};
                                                     }
                                                     else {
                                                        char * fname = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+4)); sprintf(fname, "%s(%s)", $1, $3);
@@ -231,18 +237,20 @@ expr            :     operand { $$ = $1; }
                                                 $$ = (operandinfo) {expr_text, comp.type};
                                               } else {
                                                 printf("ERROR: INCOMPATIBLE TYPES IN EXPRESSION.\n");
+                                                $$ = (operandinfo){"foo", "error"};
                                               }
                                               }
 
 operand         :     NUMBER { $$ = (operandinfo){$1, "int"}; }
                 |     CHAR_LIT { $$ = (operandinfo){$1, "char"}; }
-                |     STRING_LIT { $$ = (operandinfo){$1, "string"}; }
+                |     STRING_LIT { $$ = (operandinfo){$1, "char*"}; }
                 |     NUMBER_LIT { $$ = (operandinfo){$1, "double"}; }
                 |     BOOL_LIT { $$ = (operandinfo){$1, "bool"}; }
                 |     ID { table_entry* looking_for = look_for($1);
 
                            if(looking_for == NULL){
                              printf("ERROR: VARIABLE %s WAS NOT FOUND!!!\n", $1);
+                             $$ = (operandinfo){"foo", "error"};
                            } else {
                              $$ = (operandinfo){$1, looking_for->type};
                            }
@@ -253,6 +261,7 @@ operand         :     NUMBER { $$ = (operandinfo){$1, "int"}; }
 array_access    :     ID accesses { table_entry* looking_for = look_for($1);
                                     if(looking_for == NULL){
                                        printf("ERROR: ARRAY %s NOT FOUND!!!\n", $1);
+                                       $$ = (operandinfo){"foo", "error"};
                                     }
                                     else {
                                        char * array_text = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf(array_text, "%s%s", $1, $2);
