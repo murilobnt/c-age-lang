@@ -190,7 +190,8 @@ init            :     declaration { $$ = $1; }
                                                   sprintf(hash_id, "%s.%s", scope.subp, $2);
                                                   ht_insert(ht, hash_id, $1);
                                                 } else {
-                                                  printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                                  if(strcmp($4.type, "error") != 0)
+                                                    printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
                                                   $$ = "";
                                                 }
                                              }
@@ -201,6 +202,7 @@ init            :     declaration { $$ = $1; }
                                                           sprintf(hash_id, "%s.%s", scope.subp, $2);
                                                           ht_insert(ht, hash_id, $1);
                                                         } else {
+                                                          if(strcmp($5.type, "error") != 0)
                                                           printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
                                                           $$ = "";
                                                         }
@@ -215,7 +217,8 @@ attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                          if(comp.isCompatible){
                                             $$ = $1;
                                          } else {
-                                            printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                            if(strcmp($3.type, "error") != 0)
+                                              printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
                                             $$ = "";
                                          }
                                       }
