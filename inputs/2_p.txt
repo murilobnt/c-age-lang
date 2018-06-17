@@ -1,11 +1,11 @@
 int main(){
+	int intervalo1 = 0;
+	int intervalo2 = 0;
+	int intervalo3 = 0;
+	int intervalo4 = 0;
+
 	while(true){
 		int x;
-
-		int intervalo1 = 0;
-		int intervalo2 = 0;
-		int intervalo3 = 0;
-		int intervalo4 = 0;
 
 		printf("Digite o valor de um número (negativo para finalizar): ");
 		scanf("%d", x);

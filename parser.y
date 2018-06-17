@@ -17,7 +17,7 @@ int yylex(void);
 int yyerror(char *s);
 int intlen(int i);
 table_entry* look_for(char * id);
-compatibility type_compatible(char* op1, char* op2);
+compatibility type_compatible(char* op1, char* op2, bool has_order);
 
 extern int yylineno;
 extern char * yytext;
@@ -85,7 +85,7 @@ global_var      :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     static_init { $$ = $1; }
 
-static_init     :     STATIC type_val CONST attr { $$ = (char *)malloc(sizeof(char) * (strlen($4)+19)); sprintf($$, "STATIC %s CONST %s", $2, $4); }
+static_init     :     STATIC init { $$ = ""; }
 
 func            :     type_val ID {
                                     subinfo scope = top(scope_stack, 0);
@@ -183,7 +183,7 @@ declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
 
 init            :     declaration { $$ = $1; }
                 |     type_val ID EQUAL expr {
-                                                compatibility comp = type_compatible($1, $4.type);
+                                                compatibility comp = type_compatible($1, $4.type, true);
                                                 if(comp.isCompatible){
                                                   subinfo scope = top(scope_stack, 0);
                                                   char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
@@ -195,7 +195,7 @@ init            :     declaration { $$ = $1; }
                                                   $$ = "";
                                                 }
                                              }
-                |     type_val ID accesses EQUAL expr { compatibility comp = type_compatible($1, $5.type);
+                |     type_val ID accesses EQUAL expr { compatibility comp = type_compatible($1, $5.type, true);
                                                         if(comp.isCompatible){
                                                           subinfo scope = top(scope_stack, 0);
                                                           char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
@@ -213,7 +213,7 @@ attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                          printf("ERROR: VARIABLE %s NOT FOUND!!!\n", $1);
                                          $$ = "";
                                       } else {
-                                         compatibility comp = type_compatible(looking_for->type, $3.type);
+                                         compatibility comp = type_compatible(looking_for->type, $3.type, true);
                                          if(comp.isCompatible){
                                             $$ = $1;
                                          } else {
@@ -251,12 +251,12 @@ expr_list       :     expr { $$ = ""; }
                 |     expr COMMA expr_list { $$ = ""; }
 
 expr            :     operand { $$ = $1; }
-                |     operand operator expr { compatibility comp = type_compatible($1.type, $3.type);
+                |     operand operator expr { compatibility comp = type_compatible($1.type, $3.type, false);
                                               if(comp.isCompatible){
                                                 char * expr_text = (char *)malloc(sizeof(char) * (strlen($1.value)+strlen($2)+strlen($3.value)+5)); sprintf( expr_text, "%s %s %s", $1.value, $2, $3.value );
                                                 $$ = (operandinfo) {expr_text, comp.type};
                                               } else {
-                                                printf("ERROR: INCOMPATIBLE TYPES IN EXPRESSION.\n");
+                                                printf("ERROR: INCOMPATIBLE TYPES IN EXPRESSION: %s AND %s.\n", $1.type, $3.type);
                                                 $$ = (operandinfo){"foo", "error"};
                                               }
                                               }
@@ -355,7 +355,16 @@ table_entry* look_for(char * id){
     return looking_for;
 }
 
-compatibility type_compatible(char* op1, char* op2){
+compatibility type_compatible(char* op1, char* op2, bool has_order){
+   // Float to int compatibility.
+   if((strcmp(op1, "double") == 0) && (strcmp(op2, "int") == 0)){
+      return (compatibility) {true, "double"};
+   }
+   if((strcmp(op2, "double") == 0) && (strcmp(op1, "int") == 0)){
+      return (compatibility) {true, (has_order ? "int" : "double") };
+   }
+
+   // Equal types. They are compatible.
    if(strcmp(op1, op2) == 0){
       return (compatibility) {true, op1};
    }

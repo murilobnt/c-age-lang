@@ -59,8 +59,12 @@ void ht_insert(hash_table* ht, const char * id, const char * type){
 table_entry* ht_search(hash_table* ht, const char* id){
   int index = ht_get_hash(id, ht->size, 0);
   table_entry* entry = ht->entries[index];
+  table_entry* first_entry = ht->entries[index];
+  bool first_it = true;
   int i = 1;
-  while (entry != NULL) {
+
+  while (entry != NULL && (first_it || (entry != first_entry))) {
+      if(first_it) first_it = false;
       if (strcmp(entry->id, id) == 0) {
           return entry;
       }
