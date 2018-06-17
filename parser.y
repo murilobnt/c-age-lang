@@ -17,6 +17,8 @@ int yylex(void);
 int yyerror(char *s);
 int intlen(int i);
 table_entry* look_for(char * id);
+char* type_on_accesses(char * the_type);
+char* accesses_to_type(char * the_type);
 compatibility type_compatible(char* op1, char* op2, bool has_order);
 
 extern int yylineno;
@@ -26,6 +28,7 @@ Stack * scope_stack;
 hash_table * ht;
 
 int nested_level;
+int num_accesses;
 
 %}
 
@@ -179,7 +182,10 @@ declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
                 |     type_val ID accesses { subinfo scope = top(scope_stack, 0);
                                              char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+strlen($3)+4));
                                              sprintf(hash_id, "%s.%s%s", scope.subp, $2, $3);
-                                             ht_insert(ht, hash_id, $1); }
+                                             char* real_type = accesses_to_type($1);
+                                             ht_insert(ht, hash_id, real_type);
+                                             num_accesses = 0;
+                                           }
 
 init            :     declaration { $$ = $1; }
                 |     type_val ID EQUAL expr {
@@ -206,6 +212,7 @@ init            :     declaration { $$ = $1; }
                                                           printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
                                                           $$ = "";
                                                         }
+                                                        num_accesses = 0;
                                                      }
 
 attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
@@ -223,7 +230,7 @@ attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                          }
                                       }
                                       }
-                |     ID accesses EQUAL expr {  table_entry* looking_for = look_for($1);
+                |     ID accesses {num_accesses = 0;} EQUAL expr {  table_entry* looking_for = look_for($1);
                                                 if(looking_for == NULL){
                                                    printf("ERROR: VARIABLE %s NOT FOUND!!!\n", $1);
                                                    $$ = "";
@@ -231,6 +238,7 @@ attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                                    char * var_name = (char*)malloc(sizeof(char)*(strlen($1)+strlen($2)+2)); sprintf(var_name, "%s%s", $1, $2);
                                                    $$ = var_name;
                                                 }
+                                                num_accesses = 0;
                                                 }
 
 call            :     ID OPAREN expr_scope CPAREN { table_entry* looking_for = look_for($1);
@@ -285,12 +293,14 @@ array_access    :     ID accesses { table_entry* looking_for = look_for($1);
                                     }
                                     else {
                                        char * array_text = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf(array_text, "%s%s", $1, $2);
-                                       $$ = (operandinfo) {array_text, looking_for->type};
+                                       char * f_type = type_on_accesses(looking_for->type);
+                                       $$ = (operandinfo) {array_text, f_type};
                                     }
+                                    num_accesses = 0;
                                     }
 
-accesses        :     OBRACKET expr CBRACKET { $$ = ""; }
-                |     OBRACKET expr CBRACKET accesses { $$ = ""; }
+accesses        :     OBRACKET expr CBRACKET { ++num_accesses; $$ = ""; }
+                |     OBRACKET expr CBRACKET accesses { ++num_accesses; $$ = ""; }
 
 type_val        :     TYPE pointer_scope { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s%s", $1, $2); }
 
@@ -322,6 +332,7 @@ operator        :     PLUS { $$ = "+"; }
 
 int main (void) {
   nested_level = 1;
+  num_accesses = 0;
   init(scope_stack);
   ht = hash_table_new();
   return yyparse ( );
@@ -355,7 +366,33 @@ table_entry* look_for(char * id){
     return looking_for;
 }
 
+char* type_on_accesses(char * the_type){
+  if(num_accesses >= strlen(the_type))
+     return "error";
+
+  char* result = (char*)malloc(sizeof(char) * (strlen(the_type)-num_accesses+1));
+  strncpy(result, the_type, (strlen(the_type)-num_accesses));
+  result[strlen(the_type)-num_accesses] = '\0';
+
+  return result;
+}
+
+char* accesses_to_type(char * the_type){
+  char* ats = (char*)malloc(sizeof(char) * (num_accesses+1));
+  memset (ats,'*',num_accesses);
+
+  char* dst = (char*)malloc(sizeof(char) * (strlen(the_type)+num_accesses+1));
+  sprintf(dst, "%s%s", the_type, ats);
+
+  return dst;
+}
+
 compatibility type_compatible(char* op1, char* op2, bool has_order){
+   // Equal types. They are compatible.
+   if(strcmp(op1, op2) == 0){
+      return (compatibility) {true, op1};
+   }
+
    // Float to int compatibility.
    if((strcmp(op1, "double") == 0) && (strcmp(op2, "int") == 0)){
       return (compatibility) {true, "double"};
@@ -364,10 +401,11 @@ compatibility type_compatible(char* op1, char* op2, bool has_order){
       return (compatibility) {true, (has_order ? "int" : "double") };
    }
 
-   // Equal types. They are compatible.
-   if(strcmp(op1, op2) == 0){
-      return (compatibility) {true, op1};
-   }
+   if(op1[strlen(op1)-1] == '&')
+      return (compatibility) {true, op2};
+
+    if(op2[strlen(op2)-1] == '&')
+       return (compatibility) {true, op1};
 
    return (compatibility) {false, "foo"};
 }

@@ -1,12 +1,4 @@
-double avalia_expr(double x, double y, int c){
-  return 0.0;
-}
+int matriz[5];
+int* matriz2 = matriz;
 
-int main(){
-	double x = 5.0;
-	double y = 3.0;
-	int c = 10;
-
-	double result = avalia_expr(x, y, c);
-	return 0;
-}
+int test = matriz[2] + 4;
