@@ -19,20 +19,22 @@ int intlen(int i);
 table_entry* look_for(char * id);
 char* type_on_accesses(char * the_type);
 char* accesses_to_type(char * the_type);
+void commit_error_message(char * message, char * id);
 compatibility type_compatible(char* op1, char* op2, bool has_order);
 
 extern int yylineno;
 extern char * yytext;
 
 Stack * scope_stack;
+
+bool has_errors;
+
 hash_table * ht;
 
 int nested_level;
 int num_accesses;
 
 int cumulator=65;
-
-char* hello = "ola mundo";
 
 %}
 
@@ -76,30 +78,32 @@ start_stm       :     { subinfo glob;
                         glob.type = "void";
                         scope_stack = push(scope_stack, glob);
                       }
-                        global_scope { scope_stack = pop(scope_stack); printf("%s\n", $2); }
+                        global_scope { scope_stack = pop(scope_stack);
+                                       if(!has_errors) printf("%s\n", $2);
+                                       else {}; }
 
 global_scope    :     { $$ = ""; }
                 |     globals { $$ = $1; }
 
 globals         :     global { $$ = $1; }
-                |     globals global { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s\n%s", $1, $2); }
+                |     globals global { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+16)); sprintf($$, "%s\n%s", $1, $2); }
 
 global          :     global_var SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+15)); sprintf($$, "%s;", $1); }
                 |     func { $$ = $1; }
                 |     proc { $$ = $1; }
                 |     regis { $$ = $1; }
 
-regis           :     CONTAINER ID OBRACE decl_def CBRACE { $$ = (char*)malloc(sizeof(char)*(strlen($2)+strlen($4)+23)); sprintf($$, "typedef struct {\n%s\n} %s;", $4, $2); }
+regis           :     CONTAINER ID OBRACE decl_def CBRACE { $$ = (char*)malloc(sizeof(char)*(strlen($2)+strlen($4)+25)); sprintf($$, "typedef struct {\n%s\n} %s;", $4, $2); }
 
 global_var      :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     static_init { $$ = $1; }
 
-static_init     :     STATIC init { $$ = (char *)malloc(sizeof(char) * (strlen($2)+8)); sprintf($$, "STATIC %s", $2); }
+static_init     :     STATIC init { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "STATIC %s", $2); }
 
 func            :     type_val ID {
                                     subinfo scope = top(scope_stack, 0);
-                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
+                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+20));
                                     sprintf(hash_id, "%s.%s", scope.subp, $2);
                                     ht_insert(ht, hash_id, $1);
 
@@ -113,7 +117,7 @@ func            :     type_val ID {
 
 proc            :     PROCEDURE ID {
                                       subinfo scope = top(scope_stack, 0);
-                                      char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
+                                      char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+20));
                                       sprintf(hash_id, "%s.%s", scope.subp, $2);
                                       ht_insert(ht, hash_id, "proc");
 
@@ -122,7 +126,7 @@ proc            :     PROCEDURE ID {
                                       newsubf.type = "proc";
                                       scope_stack = push(scope_stack, newsubf);
                                    }
-                      func_parameters block_body { scope_stack = pop(scope_stack); $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($4)+strlen($5)+13)); sprintf($$, "procedure %s %s %s", $2, $4, $5); }
+                      func_parameters block_body { scope_stack = pop(scope_stack); $$ = (char *)malloc(sizeof(char) * (strlen($2)+strlen($4)+strlen($5)+25)); sprintf($$, "procedure %s %s %s", $2, $4, $5); }
 
 func_parameters :     OPAREN decl_scope CPAREN { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "(%s)", $2); }
 
@@ -138,7 +142,7 @@ decl_def        :     declaration { $$ = $1; }
 bloc_scope      :     { $$ = ""; }
                 |     block_stmts { $$ = $1; }
 
-return_stmt     :     RETURN expr SEMICOLON { $$ = (char*)malloc(sizeof(char)*(strlen($2.value)+9)); sprintf($$, "return %s;", $2.value); }
+return_stmt     :     RETURN expr SEMICOLON { $$ = (char*)malloc(sizeof(char)*(strlen($2.value)+20)); sprintf($$, "return %s;", $2.value); }
                 |     RETURN SEMICOLON { $$ = "return;\n"; }
 
 block_body      :     OBRACE bloc_scope CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "{\n%s}", $2); }
@@ -156,7 +160,7 @@ block_stmt      :     block_dec SEMICOLON { $$ = (char *)malloc(sizeof(char) * (
 break_stmt      :     BREAK SEMICOLON { $$ = "break;\n"; }
 
 if_stmt         :     IF {  subinfo newsubf;
-                            newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 4));
+                            newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 10));
                             sprintf(newsubf.subp, "if.%d", nested_level++);
                             newsubf.type = "if";
                             scope_stack = push(scope_stack, newsubf);
@@ -170,55 +174,58 @@ if_else_stmt    :     if_stmt {
                                 scope_stack = push(scope_stack, newsubf);
                               } else_stmt { scope_stack = pop(scope_stack); $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+15)); sprintf($$, "%s%s", $1, $3); }
 
-else_stmt       :     ELSE block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "else goto BEGIN%c;\nBEGIN%c: %s\n",(char)cumulator,(char)cumulator, $2); }
+else_stmt       :     ELSE block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+30)); sprintf($$, "else goto BEGIN%c;\nBEGIN%c: %s\n",(char)cumulator,(char)cumulator, $2); }
 
 while_stmt      :     WHILE { subinfo newsubf;
-                            newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 7));
+                            newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 15));
                             sprintf(newsubf.subp, "while.%d", nested_level++);
                             newsubf.type = "while";
                             scope_stack = push(scope_stack, newsubf);
-                            } cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * ((strlen($3)+strlen($4)+48))); sprintf($$, "if %s goto BEGIN%c;\nBEGIN%c: %s\nif %s goto BEGIN%c;\n", $3, (char)cumulator,(char)cumulator, $4, $3, (char)cumulator); cumulator++; }
+                            } cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * ((strlen($3)+strlen($4)+51))); sprintf($$, "if %s goto BEGIN%c;\nBEGIN%c: %s\nif %s goto BEGIN%c;\n", $3, (char)cumulator,(char)cumulator, $4, $3, (char)cumulator); cumulator++; }
 
-cond_params     :     OPAREN expr CPAREN { $$ = (char*)malloc(sizeof(char)*(sizeof($2.value)+3)); sprintf($$, "(%s)", $2.value); }
+cond_params     :     OPAREN expr CPAREN { $$ = (char*)malloc(sizeof(char)*(sizeof($2.value)+10)); sprintf($$, "(%s)", $2.value); }
 
 block_dec       :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     call { $$ = $1.value; }
 
 declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
-                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
+                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+10));
                                     sprintf(hash_id, "%s.%s", scope.subp, $2);
                                     ht_insert(ht, hash_id, $1);
-                                    $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($2) + 3));
+                                    $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($2) + 10));
                                     sprintf($$, "%s %s", $1, $2);
                                     }
                 |     type_val ID accesses { subinfo scope = top(scope_stack, 0);
-                                             char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+strlen($3)+4));
+                                             char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+strlen($3)+10));
                                              sprintf(hash_id, "%s.%s%s", scope.subp, $2, $3);
                                              char* real_type = accesses_to_type($1);
                                              ht_insert(ht, hash_id, real_type);
                                              num_accesses = 0;
-                                             $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($3)+4)); sprintf($$, "%s %s%s", $1, $2, $3);
+                                             $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($3)+10)); sprintf($$, "%s %s%s", $1, $2, $3);
                                            }
 
 init            :     declaration { $$ = $1; }
                 |     type_val ID EQUAL expr {  table_entry* looking_for = look_for($2);
 
                                                 if(looking_for != NULL){
-                                                 printf("ERROR: VARIABLE %s HAVE ALREADY BEEN DECLARED!!!\n", $2);
+                                                 commit_error_message("ERROR. VARIABLE NOT FOUND: ", $2);
                                                  $$ = "";
                                                 } else {
                                                   compatibility comp = type_compatible($1, $4.type, true);
                                                   if(comp.isCompatible){
                                                     subinfo scope = top(scope_stack, 0);
-                                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
+                                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+10));
                                                     sprintf(hash_id, "%s.%s", scope.subp, $2);
                                                     ht_insert(ht, hash_id, $1);
-                                                    $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($4.value)+7));
+                                                    $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($4.value)+10));
                                                     sprintf($$, "%s %s = %s", $1, $2, $4.value);
                                                   } else {
-                                                    if(strcmp($4.type, "error") != 0)
-                                                      printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                                    if(strcmp($4.type, "error") != 0){
+                                                      commit_error_message("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.", "");
+                                                    }
+
+
                                                     $$ = "";
                                                   }
                                                 }
@@ -226,12 +233,12 @@ init            :     declaration { $$ = $1; }
                 |     type_val ID accesses EQUAL expr { compatibility comp = type_compatible($1, $5.type, true);
                                                         if(comp.isCompatible){
                                                           subinfo scope = top(scope_stack, 0);
-                                                          char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
+                                                          char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+10));
                                                           sprintf(hash_id, "%s.%s", scope.subp, $2);
                                                           ht_insert(ht, hash_id, $1);
                                                         } else {
                                                           if(strcmp($5.type, "error") != 0)
-                                                          printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                                            commit_error_message("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.", "");
                                                           $$ = "";
                                                         }
                                                         num_accesses = 0;
@@ -239,39 +246,44 @@ init            :     declaration { $$ = $1; }
 
 attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                       if(looking_for == NULL){
-                                         printf("ERROR: VARIABLE %s NOT FOUND!!!\n", $1);
+                                         commit_error_message("ERROR. VARIABLE NOT FOUND: ", $1);
                                          $$ = "";
                                       } else {
                                          compatibility comp = type_compatible(looking_for->type, $3.type, true);
                                          if(comp.isCompatible){
-                                            $$ = (char*)malloc(sizeof(char)* (strlen($1)+strlen($3.value)+5));
+                                            $$ = (char*)malloc(sizeof(char)* (strlen($1)+strlen($3.value)+10));
                                             sprintf($$,"%s = %s", $1,$3.value);
                                          } else {
                                             if(strcmp($3.type, "error") != 0)
-                                              printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                              commit_error_message("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.", "");
                                             $$ = "";
                                          }
                                       }
                                       }
                 |     ID accesses {num_accesses = 0;} EQUAL expr {  table_entry* looking_for = look_for($1);
                                                 if(looking_for == NULL){
-                                                   printf("ERROR: VARIABLE %s NOT FOUND!!!\n", $1);
+                                                   commit_error_message("ERROR. VARIABLE NOT FOUND: ", $1);
                                                    $$ = "";
                                                 } else {
-                                                   char * var_name = (char*)malloc(sizeof(char)*(strlen($1)+strlen($2)+2)); sprintf(var_name, "%s%s", $1, $2);
+                                                   char * var_name = (char*)malloc(sizeof(char)*(strlen($1)+strlen($2)+10)); sprintf(var_name, "%s%s", $1, $2);
                                                    $$ = var_name;
                                                 }
                                                 num_accesses = 0;
                                                 }
 
-call            :     ID OPAREN expr_scope CPAREN { table_entry* looking_for = look_for($1);
-                                                    if(looking_for == NULL){
-                                                       printf("ERROR: FUNCTION/PROCEDURE %s NOT FOUND!!!\n", $1);
-                                                       $$ = (operandinfo){"foo", "error"};
-                                                    }
-                                                    else {
-                                                       char * fname = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+4)); sprintf(fname, "%s(%s)", $1, $3);
-                                                       $$ = (operandinfo) {fname, looking_for->type};
+call            :     ID OPAREN expr_scope CPAREN { if((strcmp($1, "scanf") == 0) || (strcmp($1, "printf") == 0)){
+                                                      char * fname = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+10)); sprintf(fname, "%s(%s)", $1, $3);
+                                                      $$ = (operandinfo) {fname, "proc"};
+                                                    } else{
+                                                      table_entry* looking_for = look_for($1);
+                                                      if(looking_for == NULL){
+                                                         commit_error_message("ERROR: FUNCTION/PROCEDURE NOT FOUND: ", $1);
+                                                         $$ = (operandinfo){"foo", "error"};
+                                                      }
+                                                      else {
+                                                         char * fname = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+10)); sprintf(fname, "%s(%s)", $1, $3);
+                                                         $$ = (operandinfo) {fname, looking_for->type};
+                                                      }
                                                     }
                                                   }
 
@@ -279,15 +291,15 @@ expr_scope      :     { $$ = ""; }
                 |     expr_list { $$ = $1; }
 
 expr_list       :     expr { $$ = $1.value; }
-                |     expr COMMA expr_list { $$ = (char*)malloc(sizeof(char)*(strlen($1.value)+strlen($3)+4)); sprintf($$, "%s, %s", $1.value, $3); }
+                |     expr COMMA expr_list { $$ = (char*)malloc(sizeof(char)*(strlen($1.value)+strlen($3)+15)); sprintf($$, "%s, %s", $1.value, $3); }
 
 expr            :     operand { $$ = $1; }
                 |     operand operator expr { compatibility comp = type_compatible($1.type, $3.type, false);
                                               if(comp.isCompatible){
-                                                char * expr_text = (char *)malloc(sizeof(char) * (strlen($1.value)+strlen($2)+strlen($3.value)+5)); sprintf( expr_text, "%s %s %s", $1.value, $2, $3.value );
+                                                char * expr_text = (char *)malloc(sizeof(char) * (strlen($1.value)+strlen($2)+strlen($3.value)+50)); sprintf( expr_text, "%s %s %s", $1.value, $2, $3.value );
                                                 $$ = (operandinfo) {expr_text, comp.type};
                                               } else {
-                                                printf("ERROR: INCOMPATIBLE TYPES IN EXPRESSION: %s AND %s.\n", $1.type, $3.type);
+                                                commit_error_message("ERROR: INCOMPATIBLE TYPES IN EXPRESSION.", "");
                                                 $$ = (operandinfo){"foo", "error"};
                                               }
                                               }
@@ -300,7 +312,8 @@ operand         :     NUMBER { $$ = (operandinfo){$1, "int"}; }
                 |     ID { table_entry* looking_for = look_for($1);
 
                            if(looking_for == NULL){
-                             printf("ERROR: VARIABLE %s WAS NOT FOUND!!!\n", $1);
+                             commit_error_message("ERROR. VARIABLE NOT FOUND: ", $1);
+
                              $$ = (operandinfo){"foo", "error"};
                            } else {
                              $$ = (operandinfo){$1, looking_for->type};
@@ -311,11 +324,11 @@ operand         :     NUMBER { $$ = (operandinfo){$1, "int"}; }
 
 array_access    :     ID accesses { table_entry* looking_for = look_for($1);
                                     if(looking_for == NULL){
-                                       printf("ERROR: ARRAY %s NOT FOUND!!!\n", $1);
+                                       commit_error_message("ERROR. ARRAY NOT FOUND: ", $1);
                                        $$ = (operandinfo){"foo", "error"};
                                     }
                                     else {
-                                       char * array_text = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf(array_text, "%s%s", $1, $2);
+                                       char * array_text = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+10)); sprintf(array_text, "%s%s", $1, $2);
                                        char * f_type = type_on_accesses(looking_for->type);
                                        $$ = (operandinfo) {array_text, f_type};
                                     }
@@ -323,14 +336,14 @@ array_access    :     ID accesses { table_entry* looking_for = look_for($1);
                                     }
 
 accesses        :     OBRACKET expr CBRACKET { ++num_accesses;
-                                               $$ = (char *)malloc(sizeof(char) * (strlen($2.value) + 3));
+                                               $$ = (char *)malloc(sizeof(char) * (strlen($2.value) + 10));
                                                sprintf($$, "[%s]", $2.value);
                                                }
                 |     OBRACKET expr CBRACKET accesses { ++num_accesses;
-                                                        $$ = (char *)malloc(sizeof(char) * (strlen($2.value) + strlen($4) + 4));
+                                                        $$ = (char *)malloc(sizeof(char) * (strlen($2.value) + strlen($4) + 10));
                                                         sprintf($$, "[%s]%s", $2.value, $4); }
 
-type_val        :     TYPE pointer_scope { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf($$, "%s%s", $1, $2); }
+type_val        :     TYPE pointer_scope { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+10)); sprintf($$, "%s%s", $1, $2); }
 
 pointer_scope   :     { $$ = ""; }
                 |     pointers { $$ = $1; }
@@ -360,6 +373,7 @@ operator        :     PLUS { $$ = "+"; }
 
 int main (void) {
   nested_level = 1;
+  has_errors = false;
   num_accesses = 0;
   init(scope_stack);
   ht = hash_table_new();
@@ -381,7 +395,7 @@ table_entry* look_for(char * id){
     for(i = 0; i < getSize(); ++i){
        subinfo currentScope = top(scope_stack, i);
 
-       char * search_for = (char *)malloc(sizeof(char) * (strlen(id)+strlen(currentScope.subp)+3));
+       char * search_for = (char *)malloc(sizeof(char) * (strlen(id)+strlen(currentScope.subp)+10));
        sprintf(search_for, "%s.%s", currentScope.subp, id);
 
        looking_for = ht_search(ht, search_for);
@@ -413,6 +427,11 @@ char* accesses_to_type(char * the_type){
   sprintf(dst, "%s%s", the_type, ats);
 
   return dst;
+}
+
+void commit_error_message(char * message, char * id){
+  has_errors = true;
+  printf("%s%s\n", message, id);
 }
 
 compatibility type_compatible(char* op1, char* op2, bool has_order){

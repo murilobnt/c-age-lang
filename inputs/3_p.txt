@@ -5,11 +5,9 @@ int** somaMatrizes(int ** matriz1, int ** matriz2, int linhas, int colunas){
 
 	while(i < linhas) {
 
-		while(j < colunas) {
-			matrizResultante[i][j] = matriz1[i][j] + matriz2[i][j];
-
-			j = j + 1;
-		}
+	while(j < colunas) {
+		j = j + 1;
+	}
 
 		i = i + 1;
 	}

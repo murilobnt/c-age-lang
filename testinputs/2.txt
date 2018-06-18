@@ -1,5 +1,5 @@
-int x[4];
-
 int main(){
-
+  int x = "oi";
+  int y = "oi";
+  return 0;
 }
