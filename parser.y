@@ -56,7 +56,7 @@ int num_accesses;
 
 %type <sValue> global_scope globals global global_var static_init func proc bloc_scope func_parameters block_body return_stmt block_stmts block_dec cond_params
 %type <sValue> block_stmt if_stmt while_stmt init attr operator declaration decl_scope decl_list p_type
-%type <sValue> if_else_stmt else_stmt type_val pointer_scope pointers expr_scope expr_list break_stmt accesses
+%type <sValue> if_else_stmt else_stmt type_val pointer_scope pointers expr_scope expr_list break_stmt accesses regis
 %type <opinfo> operand call array_access expr
 
 %left PLUS MINUS OR UNOT
@@ -83,6 +83,9 @@ globals         :     global { $$ = $1; }
 global          :     global_var SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+15)); sprintf($$, "%s;", $1); }
                 |     func { $$ = $1; }
                 |     proc { $$ = $1; }
+                |     regis { $$ = $1; }
+
+regis           :     CONTAINER ID OBRACE decl_list CBRACE { $$ = ""; }
 
 global_var      :     init { $$ = $1; }
                 |     attr { $$ = $1; }
@@ -188,17 +191,23 @@ declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
                                            }
 
 init            :     declaration { $$ = $1; }
-                |     type_val ID EQUAL expr {
-                                                compatibility comp = type_compatible($1, $4.type, true);
-                                                if(comp.isCompatible){
-                                                  subinfo scope = top(scope_stack, 0);
-                                                  char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
-                                                  sprintf(hash_id, "%s.%s", scope.subp, $2);
-                                                  ht_insert(ht, hash_id, $1);
+                |     type_val ID EQUAL expr {  table_entry* looking_for = look_for($2);
+
+                                                if(looking_for != NULL){
+                                                 printf("ERROR: VARIABLE %s HAVE ALREADY BEEN DECLARED!!!\n", $2);
+                                                 $$ = "";
                                                 } else {
-                                                  if(strcmp($4.type, "error") != 0)
-                                                    printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
-                                                  $$ = "";
+                                                  compatibility comp = type_compatible($1, $4.type, true);
+                                                  if(comp.isCompatible){
+                                                    subinfo scope = top(scope_stack, 0);
+                                                    char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
+                                                    sprintf(hash_id, "%s.%s", scope.subp, $2);
+                                                    ht_insert(ht, hash_id, $1);
+                                                  } else {
+                                                    if(strcmp($4.type, "error") != 0)
+                                                      printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
+                                                    $$ = "";
+                                                  }
                                                 }
                                              }
                 |     type_val ID accesses EQUAL expr { compatibility comp = type_compatible($1, $5.type, true);

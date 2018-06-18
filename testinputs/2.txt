@@ -1,3 +1,8 @@
-procedure mdc(int n, int m, int & z){
-	mdc(n, m % n, z);
+int retornaSoma(){
+   return 5+5;
+}
+
+int main(){
+   int x = retornaSoma();
+   return 0;
 }
