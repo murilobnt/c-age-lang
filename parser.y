@@ -59,7 +59,7 @@ char* hello = "ola mundo";
 %token EQUAL
 
 %type <sValue> global_scope globals global global_var static_init func proc bloc_scope func_parameters block_body return_stmt block_stmts block_dec cond_params
-%type <sValue> block_stmt if_stmt while_stmt init attr operator declaration decl_scope decl_list p_type
+%type <sValue> block_stmt if_stmt while_stmt init attr operator declaration decl_scope decl_list p_type decl_def
 %type <sValue> if_else_stmt else_stmt type_val pointer_scope pointers expr_scope expr_list break_stmt accesses regis
 %type <opinfo> operand call array_access expr
 
@@ -89,13 +89,13 @@ global          :     global_var SEMICOLON { $$ = (char *)malloc(sizeof(char) * 
                 |     proc { $$ = $1; }
                 |     regis { $$ = $1; }
 
-regis           :     CONTAINER ID OBRACE decl_list CBRACE { $$ = ""; }
+regis           :     CONTAINER ID OBRACE decl_def CBRACE { $$ = (char*)malloc(sizeof(char)*(strlen($2)+strlen($4)+23)); sprintf($$, "typedef struct {\n%s\n} %s;", $4, $2); }
 
 global_var      :     init { $$ = $1; }
                 |     attr { $$ = $1; }
                 |     static_init { $$ = $1; }
 
-static_init     :     STATIC init { $$ = ""; }
+static_init     :     STATIC init { $$ = (char *)malloc(sizeof(char) * (strlen($2)+8)); sprintf($$, "STATIC %s", $2); }
 
 func            :     type_val ID {
                                     subinfo scope = top(scope_stack, 0);
@@ -132,10 +132,13 @@ decl_scope      :     { $$ = ""; }
 decl_list       :     declaration { $$ = $1; }
                 |     declaration COMMA decl_list { $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($3) + 15)); sprintf($$, "%s, %s", $1, $3); }
 
+decl_def        :     declaration { $$ = $1; }
+                |     declaration SEMICOLON decl_list { $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($3) + 15)); sprintf($$, "%s;\n%s", $1, $3); }
+
 bloc_scope      :     { $$ = ""; }
                 |     block_stmts { $$ = $1; }
 
-return_stmt     :     RETURN expr SEMICOLON { $$ = ""; }
+return_stmt     :     RETURN expr SEMICOLON { $$ = (char*)malloc(sizeof(char)*(strlen($2.value)+9)); sprintf($$, "return %s;", $2.value); }
                 |     RETURN SEMICOLON { $$ = "return;\n"; }
 
 block_body      :     OBRACE bloc_scope CBRACE { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "{\n%s}", $2); }
@@ -144,7 +147,7 @@ block_stmts     :     block_stmt { $$ = $1; }
                 |     block_stmts block_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s%s", $1, $2); }
 
 block_stmt      :     block_dec SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+15)); sprintf($$, "%s;\n", $1); }
-                |     if_stmt { $$ = $1; $$ = strcat($$,"endif:\n");}
+                |     if_stmt { $$ = $1; $$ = strcat($$,"endif;\n");}
                 |     if_else_stmt { $$ = $1; }
                 |     while_stmt { $$ = $1; }
                 |     return_stmt { $$ = $1; }
@@ -158,34 +161,36 @@ if_stmt         :     IF {  subinfo newsubf;
                             newsubf.type = "if";
                             scope_stack = push(scope_stack, newsubf);
                             }
-                            cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+30)); sprintf($$, "if goto BEGIN%c;\n BEGIN%c:%s %s\n",(char)cumulator,(char)cumulator, $3, $4); cumulator++;}
+                            cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+29)); sprintf($$, "if %s goto BEGIN%c;\nBEGIN%c: %s\n",$3,(char)cumulator,(char)cumulator, $4); cumulator++;}
 
-if_else_stmt    :     if_stmt { 
+if_else_stmt    :     if_stmt {
                                 subinfo newsubf;
                                 newsubf.subp = "else";
                                 newsubf.type = "else";
                                 scope_stack = push(scope_stack, newsubf);
                               } else_stmt { scope_stack = pop(scope_stack); $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($3)+15)); sprintf($$, "%s%s", $1, $3); }
 
-else_stmt       :     ELSE block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "else %s\n", $2); }
+else_stmt       :     ELSE block_body { $$ = (char *)malloc(sizeof(char) * (strlen($2)+15)); sprintf($$, "else goto BEGIN%c;\nBEGIN%c: %s\n",(char)cumulator,(char)cumulator, $2); }
 
 while_stmt      :     WHILE { subinfo newsubf;
                             newsubf.subp = (char*)malloc(sizeof(char) * (intlen(nested_level) + 7));
                             sprintf(newsubf.subp, "while.%d", nested_level++);
                             newsubf.type = "while";
                             scope_stack = push(scope_stack, newsubf);
-                            } cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+15)); sprintf($$, "while %s %s\n", $3, $4); }
+                            } cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * ((strlen($3)+strlen($4)+48))); sprintf($$, "if %s goto BEGIN%c;\nBEGIN%c: %s\nif %s goto BEGIN%c;\n", $3, (char)cumulator,(char)cumulator, $4, $3, (char)cumulator); cumulator++; }
 
-cond_params     :     OPAREN expr CPAREN { $$ = ""; }
+cond_params     :     OPAREN expr CPAREN { $$ = (char*)malloc(sizeof(char)*(sizeof($2.value)+3)); sprintf($$, "(%s)", $2.value); }
 
 block_dec       :     init { $$ = $1; }
                 |     attr { $$ = $1; }
-                |     call { $$ = ""; }
+                |     call { $$ = $1.value; }
 
 declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
                                     char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
                                     sprintf(hash_id, "%s.%s", scope.subp, $2);
                                     ht_insert(ht, hash_id, $1);
+                                    $$ = (char *)malloc(sizeof(char) * (strlen($1) + strlen($2) + 3));
+                                    sprintf($$, "%s %s", $1, $2);
                                     }
                 |     type_val ID accesses { subinfo scope = top(scope_stack, 0);
                                              char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+strlen($3)+4));
@@ -193,6 +198,7 @@ declaration     :     type_val ID { subinfo scope = top(scope_stack, 0);
                                              char* real_type = accesses_to_type($1);
                                              ht_insert(ht, hash_id, real_type);
                                              num_accesses = 0;
+                                             $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($3)+4)); sprintf($$, "%s %s%s", $1, $2, $3);
                                            }
 
 init            :     declaration { $$ = $1; }
@@ -208,6 +214,8 @@ init            :     declaration { $$ = $1; }
                                                     char * hash_id = (char *)malloc(sizeof(char)*(strlen(scope.subp)+strlen($2)+3));
                                                     sprintf(hash_id, "%s.%s", scope.subp, $2);
                                                     ht_insert(ht, hash_id, $1);
+                                                    $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+strlen($4.value)+7));
+                                                    sprintf($$, "%s %s = %s", $1, $2, $4.value);
                                                   } else {
                                                     if(strcmp($4.type, "error") != 0)
                                                       printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
@@ -270,8 +278,8 @@ call            :     ID OPAREN expr_scope CPAREN { table_entry* looking_for = l
 expr_scope      :     { $$ = ""; }
                 |     expr_list { $$ = $1; }
 
-expr_list       :     expr { $$ = ""; }
-                |     expr COMMA expr_list { $$ = ""; }
+expr_list       :     expr { $$ = $1.value; }
+                |     expr COMMA expr_list { $$ = (char*)malloc(sizeof(char)*(strlen($1.value)+strlen($3)+4)); sprintf($$, "%s, %s", $1.value, $3); }
 
 expr            :     operand { $$ = $1; }
                 |     operand operator expr { compatibility comp = type_compatible($1.type, $3.type, false);
@@ -314,10 +322,15 @@ array_access    :     ID accesses { table_entry* looking_for = look_for($1);
                                     num_accesses = 0;
                                     }
 
-accesses        :     OBRACKET expr CBRACKET { ++num_accesses; $$ = ""; }
-                |     OBRACKET expr CBRACKET accesses { ++num_accesses; $$ = ""; }
+accesses        :     OBRACKET expr CBRACKET { ++num_accesses;
+                                               $$ = (char *)malloc(sizeof(char) * (strlen($2.value) + 3));
+                                               sprintf($$, "[%s]", $2.value);
+                                               }
+                |     OBRACKET expr CBRACKET accesses { ++num_accesses;
+                                                        $$ = (char *)malloc(sizeof(char) * (strlen($2.value) + strlen($4) + 4));
+                                                        sprintf($$, "[%s]%s", $2.value, $4); }
 
-type_val        :     TYPE pointer_scope { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s%s", $1, $2); }
+type_val        :     TYPE pointer_scope { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+2)); sprintf($$, "%s%s", $1, $2); }
 
 pointer_scope   :     { $$ = ""; }
                 |     pointers { $$ = $1; }
