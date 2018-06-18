@@ -30,6 +30,10 @@ hash_table * ht;
 int nested_level;
 int num_accesses;
 
+int cumulator=65;
+
+char* hello = "ola mundo";
+
 %}
 
 %union{
@@ -140,7 +144,7 @@ block_stmts     :     block_stmt { $$ = $1; }
                 |     block_stmts block_stmt { $$ = (char *)malloc(sizeof(char) * (strlen($1)+strlen($2)+15)); sprintf($$, "%s%s", $1, $2); }
 
 block_stmt      :     block_dec SEMICOLON { $$ = (char *)malloc(sizeof(char) * (strlen($1)+15)); sprintf($$, "%s;\n", $1); }
-                |     if_stmt { $$ = $1; }
+                |     if_stmt { $$ = $1; $$ = strcat($$,"endif:\n");}
                 |     if_else_stmt { $$ = $1; }
                 |     while_stmt { $$ = $1; }
                 |     return_stmt { $$ = $1; }
@@ -154,9 +158,10 @@ if_stmt         :     IF {  subinfo newsubf;
                             newsubf.type = "if";
                             scope_stack = push(scope_stack, newsubf);
                             }
-                            cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+15)); sprintf($$, "if %s %s\n", $3, $4); }
+                            cond_params block_body { scope_stack = pop(scope_stack); --nested_level; $$ = (char *)malloc(sizeof(char) * (strlen($3)+strlen($4)+30)); sprintf($$, "if goto BEGIN%c;\n BEGIN%c:%s %s\n",(char)cumulator,(char)cumulator, $3, $4); cumulator++;}
 
-if_else_stmt    :     if_stmt { subinfo newsubf;
+if_else_stmt    :     if_stmt { 
+                                subinfo newsubf;
                                 newsubf.subp = "else";
                                 newsubf.type = "else";
                                 scope_stack = push(scope_stack, newsubf);
@@ -231,7 +236,8 @@ attr            :     ID EQUAL expr { table_entry* looking_for = look_for($1);
                                       } else {
                                          compatibility comp = type_compatible(looking_for->type, $3.type, true);
                                          if(comp.isCompatible){
-                                            $$ = $1;
+                                            $$ = (char*)malloc(sizeof(char)* (strlen($1)+strlen($3.value)+5));
+                                            sprintf($$,"%s = %s", $1,$3.value);
                                          } else {
                                             if(strcmp($3.type, "error") != 0)
                                               printf("ERROR: ATTRIBUTION FAILED DUE TO DIFFERENT TYPES.\n");
